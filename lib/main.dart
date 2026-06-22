@@ -372,10 +372,12 @@ class _StockScreenerScreenState extends State<StockScreenerScreen> {
                                 )
                               ],
                             ),
-                            subtitle: Padding(
-                              padding: const EdgeInsets.top(4.0),
-                              child: Text(stock.name, style: const TextStyle(color: Colors.grey, fontSize: 12), overflow: TextOverflow.ellipsis),
-                            ),
+                            
+subtitle: Padding(
+  padding: const EdgeInsets.only(top: 4.0), // FIX: Menggunakan EdgeInsets.only
+  child: Text(stock.name, style: const TextStyle(color: Colors.grey, fontSize: 12), overflow: TextOverflow.ellipsis),
+),
+
                             trailing: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               crossAxisAlignment: CrossAxisAlignment.end,
