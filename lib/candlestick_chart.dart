@@ -94,8 +94,8 @@ class _ChartPainter extends CustomPainter {
       // =================================================================
       // MODUL A: FIBONACCI RETRACEMENT (Garis Horizontal)
       // =================================================================
-      double startY = pointA!.y;
-      double endY = pointB!.y;
+      double startY = pointA!.dy; // Fix: Menggunakan .dy
+      double endY = pointB!.dy;   // Fix: Menggunakan .dy
       double heightDelta = endY - startY;
 
       final fiboRatios = [0.0, 0.382, 0.5, 0.618, 1.0];
@@ -111,17 +111,15 @@ class _ChartPainter extends CustomPainter {
       // =================================================================
       // MODUL B: GANN FAN (Pancaran Sudut Geometri W.D. Gann)
       // =================================================================
-      // Kita hitung selisih jarak X (waktu) dan Y (harga) dari tarikan jarimu
-      double dx = pointB!.x - pointA!.x;
-      double dy = pointB!.y - pointA!.y;
+      // Menggunakan nama variabel diffX & diffY agar tidak bentrok dengan properti .dx & .dy
+      double diffX = pointB!.dx - pointA!.dx; // Fix: Menggunakan .dx
+      double diffY = pointB!.dy - pointA!.dy; // Fix: Menggunakan .dy
 
-      // Daftar rasio kecepatan sudut Gann yang populer (Waktu x Harga)
-      // 1x1 artinya keseimbangan sempurna, 1x2 artinya harga naik 2 kali lebih cepat dari waktu, dst.
       final gannRatios = [
         {'name': '1x4', 'multiplier': 4.0},
         {'name': '1x3', 'multiplier': 3.0},
         {'name': '1x2', 'multiplier': 2.0},
-        {'name': '1x1', 'multiplier': 1.0}, // Garis Keseimbangan Utama (45 Derajat)
+        {'name': '1x1', 'multiplier': 1.0}, 
         {'name': '2x1', 'multiplier': 0.5},
         {'name': '3x1', 'multiplier': 0.33},
         {'name': '4x1', 'multiplier': 0.25},
@@ -130,19 +128,16 @@ class _ChartPainter extends CustomPainter {
       for (var gann in gannRatios) {
         double m = gann['multiplier'] as double;
         
-        // Rumus Proyeksi Geometri: Tentukan titik ujung garis luar berdasarkan rasio sudut
-        double targetX = pointA!.x + dx;
-        double targetY = pointA!.y + (dy * m);
+        double targetX = pointA!.dx + diffX; // Fix: Menggunakan .dx
+        double targetY = pointA!.dy + (diffY * m); // Fix: Menggunakan .dy
 
         final gannPaint = Paint()
           ..color = gann['name'] == '1x1' ? Colors.redAccent : Colors.white24
           ..strokeWidth = gann['name'] == '1x1' ? 2.0 : 1.0
           ..style = PaintingStyle.stroke;
 
-        // Tarik garis pancaran dari Titik A menuju ruang masa depan pergerakan harga
         canvas.drawLine(pointA!, Offset(targetX, targetY), gannPaint);
 
-        // Beri teks penanda di ujung garis pancarannya
         if (targetX > 0 && targetX < size.width && targetY > 0 && targetY < size.height) {
           final textPainter = TextPainter(
             text: TextSpan(
