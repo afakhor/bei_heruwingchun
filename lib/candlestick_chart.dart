@@ -12,30 +12,24 @@ class CandlestickChart extends StatefulWidget {
 }
 
 class _CandlestickChartState extends State<CandlestickChart> {
-  // Koordinat pixel untuk menarik garis Fibonacci manual
   Offset? _pointA;
   Offset? _pointB;
-  bool _isDrawingFibo = true; // Mode aktif menggambar
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 300, // Kita naikkan sedikit tingginya agar lebih lega untuk digambar
+      height: 320, 
       width: double.infinity,
       color: const Color(0xff131722),
       child: GestureDetector(
-        // Tangkap momen saat jari pertama kali menyentuh layar (Titik A)
         onPanStart: (details) {
-          if (_isDrawingFibo) {
-            setState(() {
-              _pointA = details.localPosition;
-              _pointB = details.localPosition; // Inisialisasi awal sama
-            });
-          }
+          setState(() {
+            _pointA = details.localPosition;
+            _pointB = details.localPosition;
+          });
         },
-        // Tangkap pergerakan jari saat digeser/diseret (Update Titik B)
         onPanUpdate: (details) {
-          if (_isDrawingFibo && _pointA != null) {
+          if (_pointA != null) {
             setState(() {
               _pointB = details.localPosition;
             });
@@ -64,12 +58,9 @@ class _ChartPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (candles.isEmpty) return;
 
-    // =================================================================
-    // 1. HITUNG SKALA GRAFIK CANDLESTICK (Sama seperti kemarin)
-    // =================================================================
+    // 1. HITUNG SKALA GRAFIK CANDLESTICK
     double maxPrice = candles.map((e) => e.high).reduce(max);
     double minPrice = candles.map((e) => e.low).reduce(min);
-    
     maxPrice += (maxPrice - minPrice) * 0.1;
     minPrice -= (maxPrice - minPrice) * 0.1;
     double priceRange = maxPrice - minPrice;
@@ -94,71 +85,79 @@ class _ChartPainter extends CustomPainter {
       double rightX = centerX + (candleWidth / 2);
 
       bool isBullish = candle.close >= candle.open;
-      Paint currentPaint = isBullish ? paintBullish : paintBearish;
-      paintWick.color = isBullish ? const Color(0xff26a69a) : const Color(0xffef5350);
-
-      canvas.drawLine(Offset(centerX, highY), Offset(centerX, lowY), paintWick);
-      canvas.drawRect(Rect.fromLTRB(leftX, topY(openY, closeY), rightX, bottomY(openY, closeY)), currentPaint);
+      canvas.drawLine(Offset(centerX, highY), Offset(centerX, lowY), paintWick..color = isBullish ? const Color(0xff26a69a) : const Color(0xffef5350));
+      canvas.drawRect(Rect.fromLTRB(leftX, openY < closeY ? openY : closeY, rightX, openY > closeY ? openY : closeY), isBullish ? paintBullish : paintBearish);
     }
 
-    // =================================================================
-    // 2. MODUL MATEMATIKA: MENGGAMBAR FIBONACCI RETRACEMENT
-    // =================================================================
+    // JIKA ADA SENTUHAN JARI, LUKIS FIBO & GANN
     if (pointA != null && pointB != null) {
+      // =================================================================
+      // MODUL A: FIBONACCI RETRACEMENT (Garis Horizontal)
+      // =================================================================
       double startY = pointA!.y;
       double endY = pointB!.y;
       double heightDelta = endY - startY;
 
-      // Daftar rasio emas Fibonacci Retracement baku sesuai standar trading harian
-      final fiboRatios = [0.0, 0.236, 0.382, 0.5, 0.618, 0.786, 1.0];
-      final fiboColors = [
-        Colors.red,          // 0.0
-        Colors.orange,       // 0.236
-        Colors.yellow,       // 0.382
-        Colors.green,        // 0.5 (Zonasi krusial psikologis)
-        Colors.greenAccent,  // 0.618 (The Golden Ratio)
-        Colors.blue,         // 0.786
-        Colors.purple        // 1.0
+      final fiboRatios = [0.0, 0.382, 0.5, 0.618, 1.0];
+      for (var ratio in fiboRatios) {
+        double currentLineY = startY + (heightDelta * ratio);
+        final fiboPaint = Paint()
+          ..color = Colors.blueAccent.withOpacity(0.4)
+          ..strokeWidth = ratio == 0.618 ? 1.5 : 0.8;
+        
+        canvas.drawLine(Offset(0, currentLineY), Offset(size.width, currentLineY), fiboPaint);
+      }
+
+      // =================================================================
+      // MODUL B: GANN FAN (Pancaran Sudut Geometri W.D. Gann)
+      // =================================================================
+      // Kita hitung selisih jarak X (waktu) dan Y (harga) dari tarikan jarimu
+      double dx = pointB!.x - pointA!.x;
+      double dy = pointB!.y - pointA!.y;
+
+      // Daftar rasio kecepatan sudut Gann yang populer (Waktu x Harga)
+      // 1x1 artinya keseimbangan sempurna, 1x2 artinya harga naik 2 kali lebih cepat dari waktu, dst.
+      final gannRatios = [
+        {'name': '1x4', 'multiplier': 4.0},
+        {'name': '1x3', 'multiplier': 3.0},
+        {'name': '1x2', 'multiplier': 2.0},
+        {'name': '1x1', 'multiplier': 1.0}, // Garis Keseimbangan Utama (45 Derajat)
+        {'name': '2x1', 'multiplier': 0.5},
+        {'name': '3x1', 'multiplier': 0.33},
+        {'name': '4x1', 'multiplier': 0.25},
       ];
 
-      for (int i = 0; i < fiboRatios.length; i++) {
-        double ratio = fiboRatios[i];
-        // Hitung koordinat Y pixel berdasarkan rasio tarikan jari
-        double currentLineY = startY + (heightDelta * ratio);
+      for (var gann in gannRatios) {
+        double m = gann['multiplier'] as double;
+        
+        // Rumus Proyeksi Geometri: Tentukan titik ujung garis luar berdasarkan rasio sudut
+        double targetX = pointA!.x + dx;
+        double targetY = pointA!.y + (dy * m);
 
-        // Konversi koordinat Y pixel kembali menjadi perkiraan Nilai Harga Saham asli
-        double estimatedPrice = maxPrice - ((currentLineY / size.height) * priceRange);
-
-        // Konfigurasi kuas untuk menggambar garis Fibo
-        final fiboPaint = Paint()
-          ..color = fiboColors[i].withOpacity(0.7)
-          ..strokeWidth = (ratio == 0.618 || ratio == 0.5) ? 2.0 : 1.0 // Tebalkan Golden Ratio
+        final gannPaint = Paint()
+          ..color = gann['name'] == '1x1' ? Colors.redAccent : Colors.white24
+          ..strokeWidth = gann['name'] == '1x1' ? 2.0 : 1.0
           ..style = PaintingStyle.stroke;
 
-        // A. Gambar garis horizontal dari ujung kiri layar ke ujung kanan layar
-        canvas.drawLine(Offset(0, currentLineY), Offset(size.width, currentLineY), fiboPaint);
+        // Tarik garis pancaran dari Titik A menuju ruang masa depan pergerakan harga
+        canvas.drawLine(pointA!, Offset(targetX, targetY), gannPaint);
 
-        // B. Cetak teks label harga Fibo di atas garisnya agar kelihatan jelas harganya berapa
-        final textPainter = TextPainter(
-          text: TextSpan(
-            text: " Fibo ${ratio.toStringAsFixed(3)} (Rp${estimatedPrice.toStringAsFixed(0)})",
-            style: TextStyle(color: fiboColors[i], fontSize: 10, fontWeight: FontWeight.bold),
-          ),
-          textDirection: TextDirection.ltr,
-        );
-        textPainter.layout();
-        // Render teks sedikit di atas garis di sebelah kiri layar
-        textPainter.paint(canvas, Offset(5, currentLineY - 12));
+        // Beri teks penanda di ujung garis pancarannya
+        if (targetX > 0 && targetX < size.width && targetY > 0 && targetY < size.height) {
+          final textPainter = TextPainter(
+            text: TextSpan(
+              text: " ${gann['name']}",
+              style: TextStyle(color: gann['name'] == '1x1' ? Colors.redAccent : Colors.grey, fontSize: 9),
+            ),
+            textDirection: TextDirection.ltr,
+          );
+          textPainter.layout();
+          textPainter.paint(canvas, Offset(targetX, targetY - 10));
+        }
       }
     }
   }
 
-  double topY(double o, double c) => o < c ? o : c;
-  double bottomY(double o, double c) => o > c ? o : c;
-
   @override
-  bool shouldRepaint(covariant _ChartPainter oldDelegate) {
-    // Selalu lukis ulang saat data candle berubah atau koordinat sentuhan jari bergeser
-    return true;
-  }
+  bool shouldRepaint(covariant _ChartPainter oldDelegate) => true;
 }
