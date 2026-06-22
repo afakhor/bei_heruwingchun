@@ -1,0 +1,47 @@
+name: Build Android APK (C++ Integrated)
+
+on:
+  push:
+    branches:
+      - main  # Trigger otomatis jalan setiap kamu push ke branch main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Ambil semua kode dari repositori GitHub kamu
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # 2. Siapkan environment Java 17 (Wajib untuk Gradle Android modern)
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          cache: 'gradle'
+
+      # 3. Pasang SDK Flutter versi stabil terbaru di server cloud
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      # 4. Ambil semua library dependency yang terdaftar di pubspec.yaml
+      - name: Install Flutter Dependencies
+        run: flutter pub get
+
+      # 5. Proses Kompilasi Utama:
+      # Perintah ini otomatis mendeteksi CMakeLists.txt, mengompilasi finance_engine.cpp
+      # menjadi libfinance_engine.so, lalu membungkusnya ke dalam file APK release.
+      - name: Build Release APK
+        run: flutter build apk --release
+
+      # 6. Upload hasilnya agar bisa kamu download langsung dari HP kamu
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bei-trade-app-release
+          path: build/app/outputs/flutter-apk/app-release.apk
