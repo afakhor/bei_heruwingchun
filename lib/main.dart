@@ -20,7 +20,6 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// 1. ENGINE UTAMA UNTUK MENGATUR NAVIGASI BAWAH LAYAR
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
 
@@ -31,10 +30,9 @@ class MainNavigationScreen extends StatefulWidget {
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
 
-  // Daftar halaman yang bisa diakses
   final List<Widget> _pages = [
-    const LiveTradingScreen(), // Halaman 1: Chart & Live Signal
-    const StockScreenerScreen(), // Halaman 2: Hasil Filter Terbaik Hari Ini
+    const LiveTradingScreen(), 
+    const StockScreenerScreen(), 
   ];
 
   @override
@@ -44,7 +42,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         backgroundColor: const Color(0xff1c2030),
-        selectedItemColor: const Color(0xff26a69a), // Hijau TradingView
+        selectedItemColor: const Color(0xff26a69a), 
         unselectedItemColor: Colors.grey,
         onTap: (index) {
           setState(() {
@@ -57,8 +55,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             label: 'Live Chart',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.调色板_outlined), // Menggunakan ikon filter/list
-            activeIcon: Icon(Icons.insights),
+            icon: Icon(Icons.filter_list), // Fix: Mengganti ikon typo kemarin agar sukses compile
             label: 'Top Filtered',
           ),
         ],
@@ -68,7 +65,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // =================================================================
-// HALAMAN 1: LIVE TRADING SCREEN (Kode Kamu yang Sebelumnya)
+// CARA NYARI DI HALAMAN 1: KETIK KODE -> ENTER -> GRAFIK BERUBAH
 // =================================================================
 class LiveTradingScreen extends StatefulWidget {
   const LiveTradingScreen({super.key});
@@ -243,7 +240,7 @@ class _LiveTradingScreenState extends State<LiveTradingScreen> {
 }
 
 // =================================================================
-// HALAMAN 2: NEW WIDGET - STOCK SCREENER SCREEN (HASIL FILTERAN)
+// CARA NYARI DI HALAMAN 2: REAL-TIME FILTER LIST DATA
 // =================================================================
 class ScreenedStockModel {
   final int rank;
@@ -265,20 +262,52 @@ class ScreenedStockModel {
   });
 }
 
-class StockScreenerScreen extends StatelessWidget {
+class StockScreenerScreen extends StatefulWidget {
   const StockScreenerScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // Simulasi database data filteran bursa real-time hari ini
-    final List<ScreenedStockModel> topStocks = [
-      ScreenedStockModel(rank: 1, ticker: 'BCIP', name: 'Bumi Citra Permai Tbk', price: 84, changePercent: 14.2, score: 95, strategyTag: 'Fast Trade / Scalping'),
-      ScreenedStockModel(rank: 2, ticker: 'BRIS', name: 'Bank Syariah Indonesia Tbk', price: 2540, changePercent: 6.8, score: 89, strategyTag: 'Volume Spike Breakout'),
-      ScreenedStockModel(rank: 3, ticker: 'ANTM', name: 'Aneka Tambang Tbk', price: 1620, changePercent: 4.5, score: 82, strategyTag: 'EMA Cross Uptrend'),
-      ScreenedStockModel(rank: 4, ticker: 'BBRI', name: 'Bank Rakyat Indonesia Tbk', price: 5225, changePercent: 1.8, score: 78, strategyTag: 'Buy on Weakness'),
-      ScreenedStockModel(rank: 5, ticker: 'TLKM', name: 'Telkom Indonesia Tbk', price: 3640, changePercent: -0.5, score: 65, strategyTag: 'Sideways Testing Support'),
-    ];
+  State<StockScreenerScreen> createState() => _StockScreenerScreenState();
+}
 
+class _StockScreenerScreenState extends State<StockScreenerScreen> {
+  // Master Data Saham
+  final List<ScreenedStockModel> _allStocks = [
+    ScreenedStockModel(rank: 1, ticker: 'BCIP', name: 'Bumi Citra Permai Tbk', price: 84, changePercent: 14.2, score: 95, strategyTag: 'Fast Trade / Scalping'),
+    ScreenedStockModel(rank: 2, ticker: 'BRIS', name: 'Bank Syariah Indonesia Tbk', price: 2540, changePercent: 6.8, score: 89, strategyTag: 'Volume Spike Breakout'),
+    ScreenedStockModel(rank: 3, ticker: 'ANTM', name: 'Aneka Tambang Tbk', price: 1620, changePercent: 4.5, score: 82, strategyTag: 'EMA Cross Uptrend'),
+    ScreenedStockModel(rank: 4, ticker: 'BBRI', name: 'Bank Rakyat Indonesia Tbk', price: 5225, changePercent: 1.8, score: 78, strategyTag: 'Buy on Weakness'),
+    ScreenedStockModel(rank: 5, ticker: 'TLKM', name: 'Telkom Indonesia Tbk', price: 3640, changePercent: -0.5, score: 65, strategyTag: 'Sideways Testing Support'),
+  ];
+
+  // Data yang berhasil lolos ketikan pencarian user
+  List<ScreenedStockModel> _filteredStocks = [];
+  final TextEditingController _screenerSearchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _filteredStocks = _allStocks; // Awalnya munculkan semua
+  }
+
+  // Fungsi menyaring list saat user ngetik keyword saham
+  void _runFilter(String keyword) {
+    List<ScreenedStockModel> results = [];
+    if (keyword.isEmpty) {
+      results = _allStocks;
+    } else {
+      results = _allStocks
+          .where((stock) => stock.ticker.toLowerCase().contains(keyword.toLowerCase()) || 
+                            stock.name.toLowerCase().contains(keyword.toLowerCase()))
+          .toList();
+    }
+
+    setState(() {
+      _filteredStocks = results;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xff161a25),
       appBar: AppBar(
@@ -291,88 +320,82 @@ class StockScreenerScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Banner Keterangan Filter
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xff1b3a32).withOpacity(0.3),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xff26a69a).withOpacity(0.5)),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.flash_on, color: Colors.amber),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      "Kriteria: Momentum Bullish + Volume Spike di atas rata-rata MA20. Diupdate otomatis oleh C++ Scoring Engine.",
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                  ),
-                ],
+            // KOTAK PENCARIAN LIVE DI HALAMAN 2
+            TextField(
+              controller: _screenerSearchController,
+              onChanged: _runFilter, // Setiap ketikan langsung menyaring otomatis!
+              decoration: InputDecoration(
+                labelText: 'Cari hasil filteran harian...',
+                suffixIcon: const Icon(Icons.search, color: Colors.greenAccent),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                filled: true,
+                fillColor: const Color(0xff1f222e),
               ),
             ),
             const SizedBox(height: 15),
             
-            // LIST UTAMA HASIL FILTER SAHAM
             Expanded(
-              child: ListView.builder(
-                itemCount: topStocks.length,
-                itemBuilder: (context, index) {
-                  final stock = topStocks[index];
-                  bool isPositive = stock.changePercent >= 0;
+              child: _filteredStocks.isEmpty
+                  ? const Center(child: Text('Saham tidak ditemukan dalam radar hari ini.'))
+                  : ListView.builder(
+                      itemCount: _filteredStocks.length,
+                      itemBuilder: (context, index) {
+                        final stock = _filteredStocks[index];
+                        bool isPositive = stock.changePercent >= 0;
 
-                  return Card(
-                    color: const Color(0xff1f222e),
-                    margin: const EdgeInsets.symmetric(vertical: 6),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      // Rank Number di sebelah kiri
-                      leading: CircleAvatar(
-                        backgroundColor: stock.rank <= 2 ? const Color(0xff26a69a) : Colors.grey[800],
-                        child: Text('#${stock.rank}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
-                      ),
-                      // Ticker dan Nama Perusahaan
-                      title: Row(
-                        children: [
-                          Text(stock.ticker, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Colors.blueGrey.withOpacity(0.3),
-                              borderRadius: BorderRadius.circular(4)
+                        return Card(
+                          color: const Color(0xff1f222e),
+                          margin: const EdgeInsets.symmetric(vertical: 6),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            leading: CircleAvatar(
+                              backgroundColor: stock.rank <= 2 ? const Color(0xff26a69a) : Colors.grey[800],
+                              child: Text('#${stock.rank}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
                             ),
-                            child: Text(stock.strategyTag, style: const TextStyle(fontSize: 10, color: Colors.cyanAccent)),
-                          )
-                        ],
-                      ),
-                      subtitle: Padding(
-                        padding: const EdgeInsets.top(4.0),
-                        child: Text(stock.name, style: const TextStyle(color: Colors.grey, fontSize: 12), overflow: TextOverflow.ellipsis),
-                      ),
-                      // Harga dan Persentase Perubahan di Sebelah Kanan
-                      trailing: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text("Rp${stock.price.toStringAsFixed(0)}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                          const SizedBox(height: 4),
-                          Text(
-                            "${isPositive ? '+' : ''}${stock.changePercent.toStringAsFixed(1)}%",
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13,
-                              color: isPositive ? const Color(0xff26a69a) : const Color(0xffef5350),
+                            title: Row(
+                              children: [
+                                Text(stock.ticker, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: SingleChildScrollView(
+                                    scrollDirection: Axis.horizontal,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: Colors.blueGrey.withOpacity(0.3),
+                                        borderRadius: BorderRadius.circular(4)
+                                      ),
+                                      child: Text(stock.strategyTag, style: const TextStyle(fontSize: 10, color: Colors.cyanAccent)),
+                                    ),
+                                  ),
+                                )
+                              ],
+                            ),
+                            subtitle: Padding(
+                              padding: const EdgeInsets.top(4.0),
+                              child: Text(stock.name, style: const TextStyle(color: Colors.grey, fontSize: 12), overflow: TextOverflow.ellipsis),
+                            ),
+                            trailing: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text("Rp${stock.price.toStringAsFixed(0)}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                const SizedBox(height: 4),
+                                Text(
+                                  "${isPositive ? '+' : ''}${stock.changePercent.toStringAsFixed(1)}%",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                    color: isPositive ? const Color(0xff26a69a) : const Color(0xffef5350),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ],
-                      ),
+                        );
+                      },
                     ),
-                  );
-                },
-              ),
             ),
           ],
         ),
