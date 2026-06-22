@@ -24,51 +24,56 @@ class StockStreamService {
 
   Stream<List<CandleModel>> get chartStream => _controller.stream;
 
-  void startStreaming() {
-    final random = Random();
-    double lastClose = 5200.0;
+  void startStreaming(String ticker) {
+    _timer?.cancel();
+    _history.clear();
 
-    // 1. Buat 20 candle pertama sebagai data awal (Pre-load)
+    final random = Random();
+    String cleanTicker = ticker.toUpperCase().trim();
+    
+    // ALGORITMA PINTAR: Bikin harga awal otomatis berdasarkan text kode saham
+    // Jadi kalau ketik BMRI harganya akan selalu berkisar di area yang sama
+    int codeSum = cleanTicker.runes.fold(0, (sum, rune) => sum + rune);
+    double lastClose = ((codeSum * 7) % 8000) + 50.0; // Rentang Rp50 s/d Rp8050
+
+    // Override khusus untuk saham-saham jangkar biar presisi
+    if (cleanTicker == 'BBRI') lastClose = 5200.0;
+    if (cleanTicker == 'GOTO') lastClose = 65.0;
+    if (cleanTicker == 'BBCA') lastClose = 10100.0;
+
+    // Buat 20 candle awal secara dinamis
     for (int i = 0; i < 20; i++) {
-      double open = lastClose + (random.nextDouble() - 0.5) * 40;
-      double close = open + (random.nextDouble() - 0.48) * 50;
-      double high = max(open, close) + random.nextDouble() * 20;
-      double low = min(open, close) - random.nextDouble() * 20;
+      double open = lastClose + (random.nextDouble() - 0.5) * (lastClose * 0.01);
+      double close = open + (random.nextDouble() - 0.48) * (lastClose * 0.012);
+      double high = max(open, close) + random.nextDouble() * (lastClose * 0.005);
+      double low = min(open, close) - random.nextDouble() * (lastClose * 0.005);
       lastClose = close;
 
       _history.add(CandleModel(open: open, high: high, low: low, close: close, volume: 500));
     }
     _controller.add(_history);
 
-    // 2. Setiap 1 detik, update candle terakhir atau buat candle baru
+    // Loop Running Trade
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      // Ambil candle paling ujung
-      CandleModel lastCandle = _history.last;
+      if (_history.isEmpty) return;
       
-      // Simulasikan harga bergerak (update harga close, high, dan low)
-      double newClose = lastCandle.close + (random.nextDouble() - 0.48) * 30;
-      double newHigh = max(lastCandle.high, newClose);
-      double newLow = min(lastCandle.low, newClose);
+      CandleModel lastCandle = _history.last;
+      double volatility = lastCandle.close * 0.004; 
+      double newClose = lastCandle.close + (random.nextDouble() - 0.48) * volatility;
+      
+      // Batasi agar harga tidak minus/gocap bawah jika sahamnya ambles
+      if (newClose < 50) newClose = 50; 
 
-      // Update candle terakhir di dalam list
       _history[_history.length - 1] = CandleModel(
         open: lastCandle.open,
-        high: newHigh,
-        low: newLow,
+        high: max(lastCandle.high, newClose),
+        low: min(lastCandle.low, newClose),
         close: newClose,
-        volume: lastCandle.volume + 10,
+        volume: lastCandle.volume + 15,
       );
 
-      // Setiap 10 detik, kunci candle tersebut dan buat lilin baru (Bar baru terbentuk)
       if (timer.tick % 10 == 0) {
-        _history.add(CandleModel(
-          open: newClose,
-          high: newClose,
-          low: newClose,
-          close: newClose,
-          volume: 0,
-        ));
-        // Batasi histori hanya 30 candle di layar biar HP ramah memori
+        _history.add(CandleModel(open: newClose, high: newClose, low: newClose, close: newClose, volume: 0));
         if (_history.length > 30) _history.removeAt(0);
       }
 
