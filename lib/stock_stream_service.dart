@@ -1,83 +1,85 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:io';
 import 'dart:math';
 
-class StockTick {
+class CandleModel {
+  final double open;
+  final double high;
+  final double low;
   final double close;
   final double volume;
 
-  StockTick({required this.close, required this.volume});
+  CandleModel({
+    required this.open,
+    required this.high,
+    required this.low,
+    required this.close,
+    required this.volume,
+  });
 }
 
 class StockStreamService {
-  WebSocket? _webSocket;
-  StreamController<StockTick> _controller = StreamController<StockTick>.broadcast();
-  Timer? _mockTimer;
-  bool _isMockMode = true; // Ubah ke false jika nanti sudah punya URL asli
+  final StreamController<List<CandleModel>> _controller = StreamController<List<CandleModel>>.broadcast();
+  List<CandleModel> _history = [];
+  Timer? _timer;
 
-  Stream<StockTick> get tickStream => _controller.stream;
+  Stream<List<CandleModel>> get chartStream => _controller.stream;
 
-  // Fungsi untuk mulai mendengarkan data bursa
-  void connectToExchange(String url, Map<String, String> headers) async {
-    if (_isMockMode) {
-      _startMockDataStream();
-    } else {
-      _connectRealWebSocket(url, headers);
-    }
-  }
-
-  // JALAN TIKUS: Simulasi data bergerak tiap 500ms biar kodingan UI bisa ditest langsung
-  void _startMockDataStream() {
-    double currentPrice = 5200.0; // Harga awal BBRI misal
+  void startStreaming() {
     final random = Random();
+    double lastClose = 5200.0;
 
-    _mockTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
-      // Bikin harga naik turun tipis ala running trade asli
-      double change = (random.nextDouble() - 0.48) * 30; 
-      currentPrice += change;
-      double vol = (random.nextInt(500) + 100).toDouble();
+    // 1. Buat 20 candle pertama sebagai data awal (Pre-load)
+    for (int i = 0; i < 20; i++) {
+      double open = lastClose + (random.nextDouble() - 0.5) * 40;
+      double close = open + (random.nextDouble() - 0.48) * 50;
+      double high = max(open, close) + random.nextDouble() * 20;
+      double low = min(open, close) - random.nextDouble() * 20;
+      lastClose = close;
+
+      _history.add(CandleModel(open: open, high: high, low: low, close: close, volume: 500));
+    }
+    _controller.add(_history);
+
+    // 2. Setiap 1 detik, update candle terakhir atau buat candle baru
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      // Ambil candle paling ujung
+      CandleModel lastCandle = _history.last;
+      
+      // Simulasikan harga bergerak (update harga close, high, dan low)
+      double newClose = lastCandle.close + (random.nextDouble() - 0.48) * 30;
+      double newHigh = max(lastCandle.high, newClose);
+      double newLow = min(lastCandle.low, newClose);
+
+      // Update candle terakhir di dalam list
+      _history[_history.length - 1] = CandleModel(
+        open: lastCandle.open,
+        high: newHigh,
+        low: newLow,
+        close: newClose,
+        volume: lastCandle.volume + 10,
+      );
+
+      // Setiap 10 detik, kunci candle tersebut dan buat lilin baru (Bar baru terbentuk)
+      if (timer.tick % 10 == 0) {
+        _history.add(CandleModel(
+          open: newClose,
+          high: newClose,
+          low: newClose,
+          close: newClose,
+          volume: 0,
+        ));
+        // Batasi histori hanya 30 candle di layar biar HP ramah memori
+        if (_history.length > 30) _history.removeAt(0);
+      }
 
       if (!_controller.isClosed) {
-        _controller.add(StockTick(close: currentPrice, volume: vol));
+        _controller.add(List.from(_history));
       }
     });
   }
 
-  // JALAN ASLI: Menembak WebSocket Broker (Ajaib/TradingView)
-  void _connectRealWebSocket(String url, Map<String, String> headers) async {
-    try {
-      _webSocket = await WebSocket.connect(url, headers: headers);
-      
-      _webSocket!.listen((message) {
-        // TODO: Parsing format unik TradingView (~m~...~m~) di sini sebelum dikirim ke C++
-        // Sementara ini contoh strukturnya jika formatnya JSON standar:
-        final data = jsonDecode(message);
-        
-        _controller.add(StockTick(
-          close: double.parse(data['price'].toString()),
-          volume: double.parse(data['volume'].toString()),
-        ));
-      }, onError: (error) {
-        print("WebSocket Error: $error");
-        _reconnect(url, headers);
-      }, onDone: () {
-        print("Koneksi WebSocket Terputus.");
-        _reconnect(url, headers);
-      });
-    } catch (e) {
-      print("Gagal tersambung ke server: $e");
-      _reconnect(url, headers);
-    }
-  }
-
-  void _reconnect(String url, Map<String, String> headers) {
-    Future.delayed(const Duration(seconds: 5), () => _connectRealWebSocket(url, headers));
-  }
-
   void dispose() {
-    _mockTimer?.cancel();
-    _webSocket?.close();
+    _timer?.cancel();
     _controller.close();
   }
 }

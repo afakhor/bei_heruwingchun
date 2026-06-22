@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'finance_engine_bridge.dart';
 import 'stock_stream_service.dart';
+import 'candlestick_chart.dart'; // Import chart kustom kita
 
 void main() {
   runApp(const MyApp());
@@ -12,7 +13,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      theme: ThemeData.dark(), // Tema gelap ala TradingView biar mata ga rusak
+      theme: ThemeData.dark(),
       home: const LiveTradingScreen(),
     );
   }
@@ -31,9 +32,8 @@ class _LiveTradingScreenState extends State<LiveTradingScreen> {
 
   @override
   void initState() {
-    super.override.initState();
-    // Jalankan stream (saat ini otomatis masuk mode simulasi dulu biar aman)
-    _streamService.connectToExchange("wss://isi_url_jika_ada", {});
+    super.initState();
+    _streamService.startStreaming(); // Mulai jalankan mesin simulasi data
   }
 
   @override
@@ -45,93 +45,106 @@ class _LiveTradingScreenState extends State<LiveTradingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Mekanis Running Trade (C++ Powered)')),
-      body: StreamBuilder<StockTick>(
-        stream: _streamService.tickStream,
+      appBar: AppBar(
+        title: const Text('Live Signal & Candlestick'),
+        backgroundColor: const Color(0xff1c2030),
+      ),
+      backgroundColor: const Color(0xff161a25),
+      body: StreamBuilder<List<CandleModel>>(
+        stream: _streamService.chartStream,
         builder: (context, snapshot) {
-          if (!snapshot.hasData) {
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final tick = snapshot.data!;
+          final candleHistory = snapshot.data!;
+          final lastCandle = candleHistory.last;
 
-          // DI SINI KEAJAIBANNYA: Setiap ada tick baru dari websocket, 
-          // data langsung dioper ke C++ untuk dihitung indikator & skornya secara instan.
-          // (Di bawah ini adalah contoh angka kalkulasi indikator yang di-supply ke engine)
+          // Lempar data harga terupdate ke mesin C++ Cepat untuk dinilai status kelayakannya
           final analisa = _engine.checkStockSignal(
-            close: tick.close,
-            ema5: tick.close * 0.99,  // Simulasi nilai terhitung
-            ema20: tick.close * 0.97, // Simulasi
-            ema200: 4800.0,           // Angka acuan uptrend besar
-            rsi: 42.0,                // Posisi aman, bukan pucuk
-            vwap: tick.close * 0.98,  // Di bawah harga running, bandar akumulasi
-            adx: 28.0,                // Tren kuat
-            atr: 75.0,                // Volatilitas saham
+            close: lastCandle.close,
+            ema5: lastCandle.close * 0.992,
+            ema20: lastCandle.close * 0.985,
+            ema200: 4900.0, // Batas aman uptrend besar
+            rsi: 45.0,
+            vwap: lastCandle.close * 0.99,
+            adx: 30.0,
+            atr: 65.0,
           );
 
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
+          return SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Card Tampilan Harga Real-Time
-                Card(
-                  color: Colors.grey[900],
-                  child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Column(
-                      children: [
-                        const Text("RUNNING TICK (BBRI)", style: TextStyle(color: Colors.grey)),
-                        const SizedBox(height: 10),
-                        Text(
-                          "Rp${tick.close.toStringAsFixed(2)}",
-                          style: TextStyle(
-                            fontSize: 32, 
-                            fontWeight: FontWeight.bold,
-                            color: analisa.action == 1 ? Colors.greenAccent : Colors.white
-                          ),
+                // 1. TAMPILAN GRAFIK CANDLESTICK KUSTOM
+                CandlestickChart(candles: candleHistory),
+                
+                const SizedBox(height: 10),
+                
+                // Info Harga Berjalan di Bawah Chart
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text("BBRI REAL-TIME TICK", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+                      Text(
+                        "Rp${lastCandle.close.toStringAsFixed(2)}",
+                        style: TextStyle(
+                          fontSize: 22, 
+                          fontWeight: FontWeight.bold,
+                          color: lastCandle.close >= lastCandle.open ? const Color(0xff26a69a) : const Color(0xffef5350)
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 15),
-                // Card Hasil Analisis Sang Penjaga Portofolio (C++)
-                Card(
-                  color: analisa.action == 1 ? Colors.green.withOpacity(0.2) : Colors.grey[900],
-                  shape: RoundedRectangleBorder(
-                    side: BorderSide(color: analisa.action == 1 ? Colors.green : Colors.transparent),
-                    borderRadius: BorderRadius.circular(8)
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Column(
-                      children: [
-                        Text(
-                          analisa.action == 1 ? "🟢 REKOMENDASI: BUY" : "⚪ REKOMENDASI: WAIT / HOLD",
-                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                        ),
-                        const Divider(height: 30, color: Colors.grey),
-                        Text("Sistem Scoring Engine: ${analisa.score} / 100 Poin", style: const TextStyle(fontSize: 16)),
-                        const SizedBox(height: 15),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            Column(
-                              children: [
-                                const Text("🛡️ STOP LOSS", style: TextStyle(color: Colors.redAccent)),
-                                Text(analisa.stopLoss > 0 ? "Rp${analisa.stopLoss.toStringAsFixed(0)}" : "-", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                              ],
-                            ),
-                            Column(
-                              children: [
-                                const Text("🎯 TAKE PROFIT", style: TextStyle(color: Colors.greenAccent)),
-                                Text(analisa.takeProfit > 0 ? "Rp${analisa.takeProfit.toStringAsFixed(0)}" : "-", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                              ],
-                            ),
-                          ],
-                        )
-                      ],
+                
+                const Divider(color: Colors.grey, thickness: 0.5),
+
+                // 2. PANEL REKOMENDASI KEPUTUSAN C++ ENGINE
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Card(
+                    color: analisa.action == 1 ? const Color(0xff1b3a32) : const Color(0xff1f222e),
+                    shape: RoundedRectangleBorder(
+                      side: BorderSide(color: analisa.action == 1 ? const Color(0xff26a69a) : Colors.transparent, width: 1.5),
+                      borderRadius: BorderRadius.circular(12)
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Column(
+                        children: [
+                          Text(
+                            analisa.action == 1 ? "🟢 AUTO SIGNAL: BUY" : "⚪ AUTO SIGNAL: HOLD / WAIT",
+                            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 8),
+                          Text("Skor Indikator Gabungan: ${analisa.score} / 100", style: const TextStyle(color: Colors.grey)),
+                          const Divider(height: 30, color: Colors.grey),
+                          
+                          // Tampilan Target Pengaman Portofolio
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              Column(
+                                children: [
+                                  const Text("🛡️ AMANKAN STOP LOSS", style: TextStyle(color: Colors.redAccent, fontSize: 12)),
+                                  const SizedBox(height: 5),
+                                  Text(analisa.stopLoss > 0 ? "Rp${analisa.stopLoss.toStringAsFixed(0)}" : "-", style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                                ],
+                              ),
+                              Column(
+                                children: [
+                                  const Text("🎯 TAGGET TAKE PROFIT", style: TextStyle(color: Colors.greenAccent, fontSize: 12)),
+                                  const SizedBox(height: 5),
+                                  Text(analisa.takeProfit > 0 ? "Rp${analisa.takeProfit.toStringAsFixed(0)}" : "-", style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                                ],
+                              ),
+                            ],
+                          )
+                        ],
+                      ),
                     ),
                   ),
                 ),
