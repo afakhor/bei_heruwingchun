@@ -562,13 +562,13 @@ class _LiveTradingViewState extends State<LiveTradingView> {
 }
 
 // =================================================================
-// 📱 3. FITUR AUTOMATIC STOCK SCREENER CO-PILOT (HANYA SATU SAJA)
+// 📱 3. FITUR RADAR SCREENER DATA SAHAM (VERSI LENGKAP & FIX)
 // =================================================================
 class ScreenedStockModel {
   final int rank;
   final String ticker;
   final String name;
-  final int price;
+  final double price; // Menggunakan double agar sinkron dengan toStringAsFixed(0)
   final double changePercent;
   final int score;
   final String strategyTag;
@@ -592,83 +592,147 @@ class StockScreenerScreen extends StatefulWidget {
 }
 
 class _StockScreenerScreenState extends State<StockScreenerScreen> {
-  final TextEditingController _searchController = TextEditingController();
-  String _searchKeyword = "";
-
-  // Contoh data screener kamu
+  // 5 Data saham aslimu sudah aman kembali di sini, Bossku
   final List<ScreenedStockModel> _allStocks = [
     ScreenedStockModel(rank: 1, ticker: 'BCIP', name: 'Bumi Citra Permai Tbk', price: 84, changePercent: 14.2, score: 95, strategyTag: 'Fast Trade / Scalping'),
     ScreenedStockModel(rank: 2, ticker: 'BRIS', name: 'Bank Syariah Indonesia Tbk', price: 2540, changePercent: 6.8, score: 89, strategyTag: 'Volume Spike Breakout'),
+    ScreenedStockModel(rank: 3, ticker: 'ANTM', name: 'Aneka Tambang Tbk', price: 1620, changePercent: 4.5, score: 82, strategyTag: 'EMA Cross Uptrend'),
+    ScreenedStockModel(rank: 4, ticker: 'BBRI', name: 'Bank Rakyat Indonesia Tbk', price: 5225, changePercent: 1.8, score: 78, strategyTag: 'Buy on Weakness'),
+    ScreenedStockModel(rank: 5, ticker: 'TLKM', name: 'Telkom Indonesia Tbk', price: 3640, changePercent: -0.5, score: 65, strategyTag: 'Sideways Testing Support'),
   ];
+
+  List<ScreenedStockModel> _filteredStocks = [];
+  final TextEditingController _screenerSearchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _filteredStocks = _allStocks; 
+  }
 
   @override
   void dispose() {
-    _searchController.dispose();
+    _screenerSearchController.dispose();
     super.dispose();
+  }
+
+  // Fungsi filter andalanmu dikembalikan tanpa error tipe data
+  void _runFilter(String keyword) {
+    List<ScreenedStockModel> results = [];
+    if (keyword.isEmpty) {
+      results = _allStocks;
+    } else {
+      results = _allStocks
+          .where((stock) => stock.ticker.toLowerCase().contains(keyword.toLowerCase()) || 
+                            stock.name.toLowerCase().contains(keyword.toLowerCase()))
+          .toList();
+    }
+
+    setState(() {
+      _filteredStocks = results;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    // Jalankan filter pencarian dengan tipe data yang dipertegas (ScreenedStockModel)
-    final filteredStocks = _allStocks.where((ScreenedStockModel stock) {
-      final keyword = _searchKeyword.toLowerCase();
-      return stock.ticker.toLowerCase().contains(keyword) || 
-             stock.name.toLowerCase().contains(keyword);
-    }).toList();
-
     return Scaffold(
-      backgroundColor: const Color(0xff131722),
+      backgroundColor: const Color(0xff161a25),
+      appBar: AppBar(
+        title: const Text('Top Filtered Stocks Today', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        backgroundColor: const Color(0xff1c2030),
+        centerTitle: true,
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(12.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Input search screener
             TextField(
-              controller: _searchController,
+              controller: _screenerSearchController,
+              onChanged: _runFilter, 
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
-                hintText: "Cari hasil screening...",
-                hintStyle: const TextStyle(color: Colors.white24),
-                prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                labelText: 'Cari hasil filteran harian...',
+                labelStyle: const TextStyle(color: Colors.grey),
+                suffixIcon: const Icon(Icons.search, color: Colors.greenAccent),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                 filled: true,
-                fillColor: const Color(0xff1c2030),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                fillColor: const Color(0xff1f222e),
               ),
-              onChanged: (value) {
-                setState(() {
-                  _searchKeyword = value;
-                });
-              },
             ),
-            const SizedBox(height: 10),
-            
-                        // List Hasil Screened
+            const SizedBox(height: 15),
+
             Expanded(
-              child: ListView.builder(
-                itemCount: filteredStocks.length,
-                itemBuilder: (context, index) {
-                  final stock = filteredStocks[index];
-                  return Card(
-                    color: const Color(0xff1c2030),
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: const Color(0xff26a69a),
-                        child: Text("${stock.rank}", style: const TextStyle(color: Colors.white)),
-                      ),
-                      title: Text("${stock.ticker} (${stock.price})", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                      subtitle: Text(stock.name, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                      trailing: Text("${stock.changePercent}%", style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)),
+              child: _filteredStocks.isEmpty
+                  ? const Center(child: Text('Saham tidak ditemukan dalam radar hari ini.', style: TextStyle(color: Colors.white)))
+                  : ListView.builder(
+                      itemCount: _filteredStocks.length,
+                      itemBuilder: (context, index) {
+                        final stock = _filteredStocks[index];
+                        bool isPositive = stock.changePercent >= 0;
+
+                        return Card(
+                          color: const Color(0xff1f222e),
+                          margin: const EdgeInsets.symmetric(vertical: 6),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            leading: CircleAvatar(
+                              backgroundColor: stock.rank <= 2 ? const Color(0xff26a69a) : Colors.grey[800],
+                              child: Text('#${stock.rank}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                            ),
+                            title: Row(
+                              children: [
+                                Text(stock.ticker, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white)),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: SingleChildScrollView(
+                                    scrollDirection: Axis.horizontal,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: Colors.blueGrey.withOpacity(0.3),
+                                        borderRadius: BorderRadius.circular(4)
+                                      ),
+                                      child: Text(stock.strategyTag, style: const TextStyle(fontSize: 10, color: Colors.cyanAccent)),
+                                    ),
+                                  ),
+                                )
+                              ],
+                            ),
+                            subtitle: Padding(
+                              padding: const EdgeInsets.only(top: 4.0), 
+                              child: Text(stock.name, style: const TextStyle(color: Colors.grey, fontSize: 12), overflow: TextOverflow.ellipsis),
+                            ),
+                            trailing: Column(
+                              mainAxisAlignment: Main====
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text("Rp${stock.price.toStringAsFixed(0)}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
+                                const SizedBox(height: 4),
+                                Text(
+                                  "${isPositive ? '+' : ''}${stock.changePercent.toStringAsFixed(1)}%",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                    color: isPositive ? const Color(0xff26a69a) : const Color(0xffef5350),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                  );
-                },
-              ),
             ),
           ],
         ),
       ),
     );
   }
-} // 🔑 FILE KAMU WAJIB BERAKHIR DI SINI! KOSONGKAN SEGALANYA DI BAWAH GARIS INI.
+} // 🔑 CODINGAN KAMU SELESAI DAN TERKUNCI RAPAT DI SINI.
 // =================================================================
 // RADAR SCREENER DATA SAHAM
 // =================================================================
