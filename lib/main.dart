@@ -21,7 +21,7 @@ class MyApp extends StatelessWidget {
 }
 
 // =================================================================
-// WIDGET SPLASH SCREEN (PORTO HERU WINGCHUN)
+// WIDGET SPLASH SCREEN INTERAKTIF (PORTO HERU WINGCHUN)
 // =================================================================
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -30,17 +30,29 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<Alignment> _alignmentAnimation;
+  
+  // Mesin animasi baru untuk efek gelombang kejut pasca-klik
+  late AnimationController _rippleController;
+  
   bool _isAtCenter = false; 
+  bool _isClicked = false; // Status penanda kalau tombol sudah dieksekusi
 
   @override
   void initState() {
     super.initState();
 
+    // 1. Animasi pergerakan perkakas (Masih sama seperti aslimu)
     _controller = AnimationController(
       duration: const Duration(seconds: 2),
+      vsync: this,
+    );
+
+    // 2. Animasi efek kejut/radar (Durasi 700ms biar responsif dan tegas)
+    _rippleController = AnimationController(
+      duration: const Duration(milliseconds: 700),
       vsync: this,
     );
 
@@ -56,18 +68,22 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       if (status == AnimationStatus.completed) {
         if (mounted) {
           setState(() {
-            _isAtCenter = true;
+            _isAtCenter = true; // Simbol berubah jadi 👆 dan stand-by nunggu klik
           });
         }
+        // Kita hapus Future.delayed otomatisnya, biar user yang kendalikan ketukan pertamanya!
+      }
+    });
 
-        Future.delayed(const Duration(milliseconds: 1500), () {
-          if (mounted) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => const MainNavigationScreen()), 
-            );
-          }
-        });
+    // Listener untuk mendeteksi kapan efek kejut selesai, lalu pindah halaman
+    _rippleController.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const MainNavigationScreen()), 
+          );
+        }
       }
     });
 
@@ -77,7 +93,18 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   @override
   void dispose() {
     _controller.dispose();
+    _rippleController.dispose();
     super.dispose();
+  }
+
+  // Fungsi eksekusi ketika simbol 👆 ditekan
+  void _handleTap() {
+    if (_isAtCenter && !_isClicked) {
+      setState(() {
+        _isClicked = true;
+      });
+      _rippleController.forward(); // Jalankan efek gelombang kejut C-130!
+    }
   }
 
   @override
@@ -101,27 +128,51 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
               fit: BoxFit.cover,       
             ),
           ),
+          
+          // LAPISAN EFEK: Menggambar garis radar melingkar tepat di belakang/sekitar icon
+          if (_isClicked)
+            AnimatedBuilder(
+              animation: _rippleController,
+              builder: (context, child) {
+                return Center(
+                  child: CustomPaint(
+                    painter: ShockwavePainter(progress: _rippleController.value),
+                    size: const Size(200, 200),
+                  ),
+                );
+              },
+            ),
+
+          // LAPISAN UTAMA: Pergerakan Icon Alat & Tombol Klik
           AnimatedBuilder(
             animation: _alignmentAnimation,
             builder: (context, child) {
               return Align(
                 alignment: _alignmentAnimation.value,
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300), 
-                  transitionBuilder: (Widget child, Animation<double> animation) {
-                    return ScaleTransition(scale: animation, child: child);
-                  },
-                  child: _isAtCenter
-                      ? const Text(
-                          '👆',
-                          key: ValueKey('finger_icon'),
-                          style: TextStyle(fontSize: 60), 
-                        )
-                      : const Text(
-                          '🛠️',
-                          key: ValueKey('tools_icon'),
-                          style: TextStyle(fontSize: 65), 
-                        ),
+                child: GestureDetector(
+                  onTap: _handleTap, // Deteksi sentuhan tangan
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300), 
+                    transitionBuilder: (Widget child, Animation<double> animation) {
+                      return ScaleTransition(scale: animation, child: child);
+                    },
+                    child: _isAtCenter
+                        ? AnimatedContainer(
+                            duration: const Duration(milliseconds: 150),
+                            // Efek mengecil sedikit pas diklik (haptic feedback visual)
+                            transform: Matrix4.identity()..scale(_isClicked ? 0.85 : 1.0),
+                            child: const Text(
+                              '👆',
+                              key: ValueKey('finger_icon'),
+                              style: TextStyle(fontSize: 60), 
+                            ),
+                          )
+                        : const Text(
+                            '🪂',
+                            key: ValueKey('tools_icon'),
+                            style: TextStyle(fontSize: 85), 
+                          ),
+                  ),
                 ),
               );
             },
@@ -132,6 +183,44 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   }
 }
 
+// =================================================================
+// PELUKIS GELOMBANG KEJUT (SHOCKWAVE RADAR PAINTER)
+// =================================================================
+class ShockwavePainter extends CustomPainter {
+  final double progress;
+  ShockwavePainter({required this.progress});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    
+    // Ring 1: Gelombang Kejut Utama (Warna Hijau Trading khas robotmu)
+    final paint1 = Paint()
+      ..color = const Color(0xff26a69a).withOpacity(1.0 - progress) // Memudar seiring waktu
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4.0 * (1.0 - progress); // Menipis di ujung akhir
+
+    double radius1 = progress * 130; // Radius meluas sampai 130 unit
+    canvas.drawCircle(center, radius1, paint1);
+
+    // Ring 2: Gelombang Lapisan Kedua (Warna Cyan Listrik, muncul agak telat)
+    if (progress > 0.2) {
+      final progress2 = (progress - 0.2) / 0.8;
+      final paint2 = Paint()
+        ..color = Colors.cyanAccent.withOpacity(1.0 - progress2)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.5 * (1.0 - progress2);
+
+      double radius2 = progress2 * 90;
+      canvas.drawCircle(center, radius2, paint2);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant ShockwavePainter oldDelegate) {
+    return oldDelegate.progress != progress;
+  }
+}
 // =================================================================
 // NAVIGASI UTAMA (DASHBOARD)
 // =================================================================
