@@ -21,7 +21,7 @@ class MyApp extends StatelessWidget {
 }
 
 // =================================================================
-// WIDGET SPLASH SCREEN MURNI OTOMATIS (EFEK RADAR TETAP JALAN)
+// WIDGET SPLASH SCREEN MURNI OTOMATIS (EFEK RADAR SEPUSAT & PRESISI)
 // =================================================================
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -38,7 +38,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   late AnimationController _rippleController;
 
   bool _isAtCenter = false; 
-  bool _isClicked = false; // Sekarang berfungsi sebagai pemicu otomatis efek radar
+  bool _isClicked = false; 
 
   @override
   void initState() {
@@ -56,9 +56,10 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       vsync: this,
     );
 
+    // 🔥 KITA KUNCI: Titik akhir (end) wajib mendarat di Alignment.center (0.0, 0.0)
     _alignmentAnimation = Tween<Alignment>(
       begin: const Alignment(2.2 , 3.2), 
-      end: const Alignment(0.1 , -0.1),
+      end: Alignment.center, 
     ).animate(CurvedAnimation(
       parent: _controller,
       curve: Curves.fastOutSlowIn, 
@@ -70,9 +71,9 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
         if (mounted) {
           setState(() {
             _isAtCenter = true; 
-            _isClicked = true; // Langsung nyalakan status efek ring radar
+            _isClicked = true; 
           });
-          _rippleController.forward(); // 💥 JALANKAN EFEK RADAR OTOMATIS TANPA TEKAN!
+          _rippleController.forward(); // 💥 Jalankan radar otomatis
         }
       }
     });
@@ -121,7 +122,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
             ),
           ),
 
-          // LAPISAN EFEK: Menggambar garis radar melingkar otomatis
+          // LAPISAN EFEK: Menggambar garis radar melingkar otomatis di tengah-tengah
           if (_isClicked)
             AnimatedBuilder(
               animation: _rippleController,
@@ -149,7 +150,9 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                   child: _isAtCenter
                       ? AnimatedContainer(
                           duration: const Duration(milliseconds: 150),
-                          transform: Matrix4.identity()..scale(_isClicked ? 0.85 : 1.0),
+                          // 🔥 KUNCI KEDUA: Paksa transformasi Matrix skala menyusut tepat di as tengah teks
+                          transformAlignment: Alignment.center, 
+                          transform: Matrix4.identity()...scale(_isClicked ? 0.85 : 1.0),
                           child: const Text(
                             '👆',
                             key: ValueKey('finger_icon'),
@@ -227,7 +230,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     const LiveTradingScreen(), 
     const StockScreenerScreen(), 
   ];
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -256,6 +258,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     );
   }
 }
+
 // =================================================================
 // HALAMAN LIVE CHART & PROSES ANALISA ENGINE
 // =================================================================
@@ -269,7 +272,7 @@ class LiveTradingScreen extends StatefulWidget {
 class _LiveTradingScreenState extends State<LiveTradingScreen> {
   final FinanceEngineBridge _engine = FinanceEngineBridge();
   final StockStreamService _streamService = StockStreamService();
-  
+
   String _currentTicker = 'BBRI';
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
@@ -341,7 +344,6 @@ class _LiveTradingScreenState extends State<LiveTradingScreen> {
           final candleHistory = snapshot.data!;
           final lastCandle = candleHistory.last;
 
-          // Panggil fungsi bridge bersih kamu yang mengarah ke evaluate_stock_signal C++
           final analisa = _engine.checkStockSignal(
             close: lastCandle.close,
             ema5: lastCandle.close * 0.992,
@@ -383,7 +385,6 @@ class _LiveTradingScreenState extends State<LiveTradingScreen> {
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Card(
-                    // Warna dinamis: Hijau (Buy/1), Merah (Avoid/-1), Abu (Hold/0)
                     color: analisa.action == 1 
                         ? const Color(0xff1b3a32) 
                         : (analisa.action == -1 ? const Color(0xff3a1b1b) : const Color(0xff1f222e)),
@@ -532,7 +533,7 @@ class _StockScreenerScreenState extends State<StockScreenerScreen> {
               ),
             ),
             const SizedBox(height: 15),
-            
+
             Expanded(
               child: _filteredStocks.isEmpty
                   ? const Center(child: Text('Saham tidak ditemukan dalam radar hari ini.'))
