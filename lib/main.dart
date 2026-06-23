@@ -561,14 +561,14 @@ class _LiveTradingViewState extends State<LiveTradingView> {
   }
 }
 
-// ===========================
-// 📱 3. FITUR RADAR SCREENER DATA SAHAM (VERSI LENGKAP & FIX)
-// ==================================
+// =================================================================
+// 📱 3. FITUR RADAR SCREENER DATA SAHAM (VERSI FINAL - AMAN BUILD)
+// =================================================================
 class ScreenedStockModel {
   final int rank;
   final String ticker;
   final String name;
-  final double price; // Menggunakan double agar sinkron dengan toStringAsFixed(0)
+  final double price;
   final double changePercent;
   final int score;
   final String strategyTag;
@@ -592,7 +592,7 @@ class StockScreenerScreen extends StatefulWidget {
 }
 
 class _StockScreenerScreenState extends State<StockScreenerScreen> {
-  // 5 Data saham aslimu sudah aman kembali di sini, Bossku
+  // 5 Data saham kesayanganmu kembali utuh dan aman
   final List<ScreenedStockModel> _allStocks = [
     ScreenedStockModel(rank: 1, ticker: 'BCIP', name: 'Bumi Citra Permai Tbk', price: 84, changePercent: 14.2, score: 95, strategyTag: 'Fast Trade / Scalping'),
     ScreenedStockModel(rank: 2, ticker: 'BRIS', name: 'Bank Syariah Indonesia Tbk', price: 2540, changePercent: 6.8, score: 89, strategyTag: 'Volume Spike Breakout'),
@@ -616,15 +616,15 @@ class _StockScreenerScreenState extends State<StockScreenerScreen> {
     super.dispose();
   }
 
-  // Fungsi filter andalanmu dikembalikan tanpa error tipe data
+  // Fungsi filter pencarian dipertegas tipe datanya agar tidak terbaca Object?
   void _runFilter(String keyword) {
     List<ScreenedStockModel> results = [];
     if (keyword.isEmpty) {
       results = _allStocks;
     } else {
       results = _allStocks
-          .where((stock) => stock.ticker.toLowerCase().contains(keyword.toLowerCase()) || 
-                            stock.name.toLowerCase().contains(keyword.toLowerCase()))
+          .where((ScreenedStockModel stock) => stock.ticker.toLowerCase().contains(keyword.toLowerCase()) || 
+                                              stock.name.toLowerCase().contains(keyword.toLowerCase()))
           .toList();
     }
 
@@ -706,7 +706,6 @@ class _StockScreenerScreenState extends State<StockScreenerScreen> {
                               child: Text(stock.name, style: const TextStyle(color: Colors.grey, fontSize: 12), overflow: TextOverflow.ellipsis),
                             ),
                             trailing: Column(
-                              mainAxisAlignment: Main====
                               mainAxisAlignment: MainAxisAlignment.center,
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
@@ -732,7 +731,8 @@ class _StockScreenerScreenState extends State<StockScreenerScreen> {
       ),
     );
   }
-} // 🔑 CODINGAN KAMU SELESAI DAN TERKUNCI RAPAT DI SINI.
+} // 🔑 FILE UTAMA SELESAI DAN TERKUNCI RAPAT DI SINI. JANGAN ADA APAPUN LAGI DI BAWAH INI!
+
 // =================================================================
 // RADAR SCREENER DATA SAHAM
 // =================================================================
