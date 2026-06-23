@@ -2,17 +2,19 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-// ✅ KEMBALI MENGGUNAKAN CANDLEDATA & TIMESTAMP BIAR KLOP SAMA MAIN.DART
-class CandleData {
-  final DateTime timestamp;
+// 📊 MODEL CANDLE UTAMA (Disamakan dengan kebutuhan candlestick_chart.dart)
+class CandleModel {
+  final DateTime timestamp; // Sesuai kebutuhan stream lama
+  final DateTime date;      // Sesuai kebutuhan GoAPI
   final double open;
   final double high;
   final double low;
   final double close;
   final double volume;
 
-  CandleData({
+  CandleModel({
     required this.timestamp,
+    required this.date,
     required this.open,
     required this.high,
     required this.low,
@@ -21,11 +23,15 @@ class CandleData {
   });
 }
 
-class StockStreamService {
-  final StreamController<List<CandleData>> _chartStreamController = 
-      StreamController<List<CandleData>>.broadcast();
+// 🛡️ ALIAS PELINDUNG: Jika ada file lain nyari CandleData, otomatis diarahkan ke CandleModel
+typedef CandleData = CandleModel;
 
-  Stream<List<CandleData>> get chartStream => _chartStreamController.stream;
+class StockStreamService {
+  // Menggunakan CandleModel sesuai kemauan main.dart baris 450
+  final StreamController<List<CandleModel>> _chartStreamController = 
+      StreamController<List<CandleModel>>.broadcast();
+
+  Stream<List<CandleModel>> get chartStream => _chartStreamController.stream;
 
   void startStreaming(String ticker, String apiKey) async {
     final url = Uri.parse(
@@ -41,11 +47,14 @@ class StockStreamService {
         if (jsonMap['status'] == 'success' && jsonMap['data'] != null) {
           final List<dynamic> dataHasil = jsonMap['data']['results'] ?? [];
           
-          List<CandleData> loadedCandles = [];
+          List<CandleModel> loadedCandles = [];
 
           for (var item in dataHasil) {
-            loadedCandles.add(CandleData(
-              timestamp: DateTime.parse(item['date'] ?? DateTime.now().toString()), // 👈 diubah ke timestamp
+            DateTime parsedDate = DateTime.parse(item['date'] ?? DateTime.now().toString());
+            
+            loadedCandles.add(CandleModel(
+              timestamp: parsedDate,
+              date: parsedDate,
               open: (item['open'] as num).toDouble(),
               high: (item['high'] as num).toDouble(),
               low: (item['low'] as num).toDouble(),
@@ -54,6 +63,7 @@ class StockStreamService {
             ));
           }
 
+          // Urutkan data dari kiri ke kanan untuk grafik
           loadedCandles = loadedCandles.reversed.toList();
 
           if (!_chartStreamController.isClosed) {
