@@ -352,11 +352,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // =================================================================
-// 📈 2. MODUL LIVE VIEW & PROSES ANALISA ENGINE (TANPA SCAFOLD)
+// 📈 2. MODUL LIVE VIEW & PROSES ANALISA ENGINE
 // =================================================================
 class LiveTradingView extends StatefulWidget {
-  final String apiKey; // 🔥 Terima kiriman API Key dari atas
-  
+  final String apiKey;
   const LiveTradingView({super.key, required this.apiKey});
 
   @override
@@ -374,19 +373,13 @@ class _LiveTradingViewState extends State<LiveTradingView> {
   @override
   void initState() {
     super.initState();
-    // 🔥 Tambahkan kurung kurawal {} untuk menerima named parameter apiKey
-void startStreaming(String ticker, {required String apiKey}) {
-  
-  // Sekarang di dalam fungsi ini, kamu bisa pakai variabel 'apiKey' 
-  // untuk ditembakkan ke URL API Twelve Data kamu!
-  // Contoh: String url = "https://api.twelvedata.com/time_series?symbol=$ticker&apikey=$apiKey";
-  
-}
+    // 💡 CATATAN: Jika StockStreamService belum diupdate, hapus ', apiKey: widget.apiKey' sementara agar bisa build
+    _streamService.startStreaming(_currentTicker, apiKey: widget.apiKey);
+  }
 
   @override
   void didUpdateWidget(covariant LiveTradingView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Jika user ganti API Key di atas tanpa restart, update langsung pipanya
     if (oldWidget.apiKey != widget.apiKey) {
       _streamService.startStreaming(_currentTicker, apiKey: widget.apiKey);
     }
@@ -412,11 +405,9 @@ void startStreaming(String ticker, {required String apiKey}) {
 
   @override
   Widget build(BuildContext context) {
-    // Return Column langsung, tidak pakai Scaffold lagi agar menyatu dengan Dashboard luar
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // 🔍 INLINE SEARCH BAR (Gantiin AppBar bawaan kemarin)
         Card(
           color: const Color(0xff1c2030),
           child: Padding(
@@ -454,7 +445,6 @@ void startStreaming(String ticker, {required String apiKey}) {
         ),
         const SizedBox(height: 10),
 
-        // STREAM DATA UTAMA
         StreamBuilder<List<CandleModel>>(
           stream: _streamService.chartStream,
           builder: (context, snapshot) {
@@ -470,7 +460,6 @@ void startStreaming(String ticker, {required String apiKey}) {
             final candleHistory = snapshot.data!;
             final lastCandle = candleHistory.last;
 
-            // Panggil Otak C++ kamu
             final analisa = _engine.checkStockSignal(
               close: lastCandle.close,
               ema5: lastCandle.close * 0.992,
@@ -485,9 +474,8 @@ void startStreaming(String ticker, {required String apiKey}) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // AREA GRAFIK
                 Container(
-                  height: 300, // Kita kunci tinggi areanya disini agar pas
+                  height: 300,
                   decoration: BoxDecoration(
                     color: const Color(0xff1c2030),
                     borderRadius: BorderRadius.circular(12),
@@ -498,8 +486,6 @@ void startStreaming(String ticker, {required String apiKey}) {
                   ),
                 ),
                 const SizedBox(height: 10),
-                
-                // PANEL HARGA RUNNING
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
                   child: Row(
@@ -517,8 +503,6 @@ void startStreaming(String ticker, {required String apiKey}) {
                     ],
                   ),
                 ),
-                
-                // PANEL KOTAK SIGNAL C++ RADAR BANGLO
                 Card(
                   color: analisa.action == 1 
                       ? const Color(0xff1b3a32) 
@@ -575,8 +559,45 @@ void startStreaming(String ticker, {required String apiKey}) {
       ],
     );
   }
+} // 🔑 LENGKAP DAN DIKUNCI DI SINI!
+
+// =================================================================
+// 📱 3. SEKAT LUAR: FITUR AUTOMATIC STOCK SCREENER CO-PILOT
+// =================================================================
+class ScreenedStockModel {
+  final int rank;
+  final String ticker;
+  final String name;
+  final int price;
+  final double changePercent;
+  final int score;
+  final String strategyTag;
+
+  ScreenedStockModel({
+    required this.rank,
+    required this.ticker,
+    required this.name,
+    required this.price,
+    required this.changePercent,
+    required this.score,
+    required this.strategyTag,
+  });
 }
 
+class StockScreenerScreen extends StatefulWidget {
+  const StockScreenerScreen({super.key});
+
+  @override
+  State<StockScreenerScreen> createState() => _StockScreenerScreenState();
+}
+
+class _StockScreenerScreenState extends State<StockScreenerScreen> {
+  // Data screener manual/otomatis Stockbit bursa kamumu aman di bawah sini...
+  @override
+  Widget build(BuildContext context) {
+    return Container(); // Isi widget sesuai screener punyamu Bossku
+  }
+}
 // =================================================================
 // RADAR SCREENER DATA SAHAM
 // =================================================================
