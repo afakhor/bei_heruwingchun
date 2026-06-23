@@ -42,7 +42,7 @@ class StockStreamService {
     String symbol = cleanTicker; 
 
     final url = Uri.parse(
-      'https://api.twelvedata.com/time_series?symbol=$symbol&interval=1min&outputsize=30&apikey=$apiKey'
+'https://api.twelvedata.com/time_series?symbol=$ticker&interval=1min&exchange=XIDX&apikey=$apiKey'
     );
 
     try {
