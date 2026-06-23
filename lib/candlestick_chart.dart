@@ -22,6 +22,13 @@ class _CandlestickChartState extends State<CandlestickChart> {
       width: double.infinity,
       color: const Color(0xff131722),
       child: GestureDetector(
+        // 🚀 FITUR BARU: Ketuk 2 kali di layar grafik untuk menghapus garis Fibo / Gann
+        onDoubleTap: () {
+          setState(() {
+            _pointA = null;
+            _pointB = null;
+          });
+        },
         onPanStart: (details) {
           setState(() {
             _pointA = details.localPosition;
@@ -59,12 +66,16 @@ class _ChartPainter extends CustomPainter {
     if (candles.isEmpty) return;
 
     // 1. HITUNG SKALA GRAFIK CANDLESTICK
-    double maxPrice = candles.map((e) => e.high).reduce(max);
-    double minPrice = candles.map((e) => e.low).reduce(min);
-    maxPrice += (maxPrice - minPrice) * 0.1;
-    minPrice -= (maxPrice - minPrice) * 0.1;
+    double rawMaxPrice = candles.map((e) => e.high).reduce(max);
+    double rawMinPrice = candles.map((e) => e.low).reduce(min);
+    
+    // ✅ PERBAIKAN 1: Hitung padding konstan dulu agar skala atas & bawah seimbang sempurna
+    double paddingHarga = (rawMaxPrice - rawMinPrice) * 0.1;
+    if (paddingHarga == 0) paddingHarga = 1.0;
+
+    double maxPrice = rawMaxPrice + paddingHarga;
+    double minPrice = rawMinPrice - paddingHarga;
     double priceRange = maxPrice - minPrice;
-    if (priceRange == 0) priceRange = 1;
 
     double widthPerCandle = size.width / candles.length;
     double candleWidth = widthPerCandle * 0.75;
@@ -94,8 +105,8 @@ class _ChartPainter extends CustomPainter {
       // =================================================================
       // MODUL A: FIBONACCI RETRACEMENT (Garis Horizontal)
       // =================================================================
-      double startY = pointA!.dy; // Fix: Menggunakan .dy
-      double endY = pointB!.dy;   // Fix: Menggunakan .dy
+      double startY = pointA!.dy; 
+      double endY = pointB!.dy;   
       double heightDelta = endY - startY;
 
       final fiboRatios = [0.0, 0.382, 0.5, 0.618, 1.0];
@@ -104,16 +115,15 @@ class _ChartPainter extends CustomPainter {
         final fiboPaint = Paint()
           ..color = Colors.blueAccent.withOpacity(0.4)
           ..strokeWidth = ratio == 0.618 ? 1.5 : 0.8;
-        
+
         canvas.drawLine(Offset(0, currentLineY), Offset(size.width, currentLineY), fiboPaint);
       }
 
       // =================================================================
       // MODUL B: GANN FAN (Pancaran Sudut Geometri W.D. Gann)
       // =================================================================
-      // Menggunakan nama variabel diffX & diffY agar tidak bentrok dengan properti .dx & .dy
-      double diffX = pointB!.dx - pointA!.dx; // Fix: Menggunakan .dx
-      double diffY = pointB!.dy - pointA!.dy; // Fix: Menggunakan .dy
+      double diffX = pointB!.dx - pointA!.dx; 
+      double diffY = pointB!.dy - pointA!.dy; 
 
       final gannRatios = [
         {'name': '1x4', 'multiplier': 4.0},
@@ -127,9 +137,9 @@ class _ChartPainter extends CustomPainter {
 
       for (var gann in gannRatios) {
         double m = gann['multiplier'] as double;
-        
-        double targetX = pointA!.dx + diffX; // Fix: Menggunakan .dx
-        double targetY = pointA!.dy + (diffY * m); // Fix: Menggunakan .dy
+
+        double targetX = pointA!.dx + diffX; 
+        double targetY = pointA!.dy + (diffY * m); 
 
         final gannPaint = Paint()
           ..color = gann['name'] == '1x1' ? Colors.redAccent : Colors.white24
