@@ -212,7 +212,6 @@ class ShockwavePainter extends CustomPainter {
     return oldDelegate.progress != progress;
   }
 }
-import 'package:flutter/material.dart';
 
 // =================================================================
 // 📊 1. HALAMAN UTAMA / DASHBOARD (INPUTAN LANGSUNG NEMPEL)
@@ -375,9 +374,14 @@ class _LiveTradingViewState extends State<LiveTradingView> {
   @override
   void initState() {
     super.initState();
-    // 🔥 Jalankan streaming langsung pakai API Key yang diinput di atas
-    _streamService.startStreaming(_currentTicker, apiKey: widget.apiKey);
-  }
+    // 🔥 Tambahkan kurung kurawal {} untuk menerima named parameter apiKey
+void startStreaming(String ticker, {required String apiKey}) {
+  
+  // Sekarang di dalam fungsi ini, kamu bisa pakai variabel 'apiKey' 
+  // untuk ditembakkan ke URL API Twelve Data kamu!
+  // Contoh: String url = "https://api.twelvedata.com/time_series?symbol=$ticker&apikey=$apiKey";
+  
+}
 
   @override
   void didUpdateWidget(covariant LiveTradingView oldWidget) {
