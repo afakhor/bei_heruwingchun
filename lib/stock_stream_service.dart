@@ -22,30 +22,27 @@ class StockStreamService {
   final StreamController<List<CandleModel>> _controller = StreamController<List<CandleModel>>.broadcast();
   Timer? _timer;
 
-  // 🔥 TARUH API KEY TWELVE DATA MU DI SINI (Ganti teks di bawah ini)
-  final String _apiKey = "d1dcab9062c74267bf7845ca1922e7a2";
-
   Stream<List<CandleModel>> get chartStream => _controller.stream;
 
-  void startStreaming(String ticker) {
+  // 💡 BARU: startStreaming sekarang menerima apiKey dinamis dari Control Panel UI-mu
+  void startStreaming(String ticker, String apiKey) {
     _timer?.cancel();
 
-    // Ambil data pertama kali, lalu refresh setiap 15 detik biar aman dari kuota gratisan
-    _fetchTwelveData(ticker);
+    _fetchTwelveData(ticker, apiKey);
     _timer = Timer.periodic(const Duration(seconds: 15), (timer) {
-      _fetchTwelveData(ticker);
+      _fetchTwelveData(ticker, apiKey);
     });
   }
 
-  Future<void> _fetchTwelveData(String ticker) async {
+  Future<void> _fetchTwelveData(String ticker, String apiKey) async {
     String cleanTicker = ticker.toUpperCase().trim();
-    
-    // Format Twelve Data untuk Bursa Efek Indonesia wajib pakai akhiran :IDX
-    String symbol = cleanTicker.endsWith(':IDX') ? cleanTicker : '$cleanTicker:IDX';
 
-    // Ambil interval 1 menit dengan total 30 candle terakhir
+    // 🚨 PERBAIKAN 1: Gunakan ticker asli yang kamu ketik tanpa memaksa akhiran :IDX
+    // (Biar kalau ketik AAPL tidak berubah jadi AAPL:IDX yang bikin server bingung)
+    String symbol = cleanTicker; 
+
     final url = Uri.parse(
-      'https://api.twelvedata.com/time_series?symbol=$symbol&interval=1min&outputsize=30&apikey=$_apiKey'
+      'https://api.twelvedata.com/time_series?symbol=$symbol&interval=1min&outputsize=30&apikey=$apiKey'
     );
 
     try {
@@ -53,33 +50,37 @@ class StockStreamService {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
 
-        // Proteksi jika API Key salah atau limit habis
+        // 🚨 PERBAIKAN 2: Jika API bermasalah, kirim pesan error-nya ke UI agar loading berhenti!
         if (data['status'] != 'ok') {
           print("Twelve Data Error: ${data['message']}");
+          _controller.addError(data['message'] ?? "Terjadi kesalahan API Twelve Data.");
           return;
         }
 
         final List<dynamic> values = data['values'] ?? [];
         List<CandleModel> loadedCandles = [];
 
-        // ⚠️ PENTING: Twelve Data mengirim data terbaru di indeks 0 (terbalik).
-        // Kita balik (.reversed) supaya urutannya pas di chart dari kiri (lampau) ke kanan (terbaru).
         for (var item in values.reversed) {
           loadedCandles.add(CandleModel(
-            open: double.parse(item['open'].toString()),
-            high: double.parse(item['high'].toString()),
-            low: double.parse(item['low'].toString()),
-            close: double.parse(item['close'].toString()),
-            volume: double.parse(item['volume'].toString()),
+            // Menggunakan double.tryParse agar super aman dari error tipe data String JSON
+            open: double.tryParse(item['open'].toString()) ?? 0.0,
+            high: double.tryParse(item['high'].toString()) ?? 0.0,
+            low: double.tryParse(item['low'].toString()) ?? 0.0,
+            close: double.tryParse(item['close'].toString()) ?? 0.0,
+            volume: double.tryParse(item['volume'].toString()) ?? 0.0,
           ));
         }
 
         if (!_controller.isClosed && loadedCandles.isNotEmpty) {
           _controller.add(loadedCandles);
         }
+      } else {
+        _controller.addError("Server merespon dengan status code: ${response.statusCode}");
       }
     } catch (e) {
       print("Koneksi Twelve Data Bermasalah: $e");
+      // 🚨 PERBAIKAN 3: Kirim error crash/koneksi internet ke UI
+      _controller.addError("Koneksi internet bermasalah atau API terblokir.");
     }
   }
 
