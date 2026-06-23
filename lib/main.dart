@@ -561,9 +561,9 @@ class _LiveTradingViewState extends State<LiveTradingView> {
   }
 }
 
-// =================================================================
+// ===========================
 // 📱 3. FITUR RADAR SCREENER DATA SAHAM (VERSI LENGKAP & FIX)
-// =================================================================
+// ==================================
 class ScreenedStockModel {
   final int rank;
   final String ticker;
