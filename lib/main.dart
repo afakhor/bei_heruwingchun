@@ -564,25 +564,6 @@ class _LiveTradingViewState extends State<LiveTradingView> {
 // =================================================================
 // 📱 3. FITUR RADAR SCREENER DATA SAHAM (VERSI FINAL - AMAN BUILD)
 // =================================================================
-class ScreenedStockModel {
-  final int rank;
-  final String ticker;
-  final String name;
-  final double price;
-  final double changePercent;
-  final int score;
-  final String strategyTag;
-
-  ScreenedStockModel({
-    required this.rank,
-    required this.ticker,
-    required this.name,
-    required this.price,
-    required this.changePercent,
-    required this.score,
-    required this.strategyTag,
-  });
-}
 
 class StockScreenerScreen extends StatefulWidget {
   const StockScreenerScreen({super.key});
