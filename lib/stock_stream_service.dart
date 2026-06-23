@@ -1,7 +1,23 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'stock_stream_service.dart'; // import model candlenya
+
+// 🔥 KITA KEMBALIKAN KELAS INI YANG KEMARIN TERHAPUS!
+class CandleModel {
+  final double open;
+  final double high;
+  final double low;
+  final double close;
+  final double volume;
+
+  CandleModel({
+    required this.open,
+    required this.high,
+    required this.low,
+    required this.close,
+    required this.volume,
+  });
+}
 
 class StockStreamService {
   final StreamController<List<CandleModel>> _controller = StreamController<List<CandleModel>>.broadcast();
@@ -12,7 +28,7 @@ class StockStreamService {
   void startStreaming(String ticker) {
     _timer?.cancel();
 
-    // Jalankan pemanggilan data pertama kali, lalu ulangi setiap 10 detik (biar hemat kuota & gak di-ban Yahoo)
+    // Jalankan pemanggilan data pertama kali, lalu ulangi setiap 10 detik
     _fetchRealData(ticker);
     _timer = Timer.periodic(const Duration(seconds: 10), (timer) {
       _fetchRealData(ticker);
@@ -21,43 +37,48 @@ class StockStreamService {
 
   Future<void> _fetchRealData(String ticker) async {
     String cleanTicker = ticker.toUpperCase().trim();
-    // Tambahkan .JK jika belum ada untuk menandakan bursa Indonesia IDX
     String yahooTicker = cleanTicker.endsWith('.JK') ? cleanTicker : '$cleanTicker.JK';
 
-    // Link API Publik Yahoo Finance untuk mengambil data chart intraday (interval 1 menit, range 1 hari)
     final url = Uri.parse('https://query1.finance.yahoo.com/v8/finance/chart/$yahooTicker?interval=1m&range=1d');
 
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+        
+        // Proteksi jika data dari server Yahoo kosong
+        if (data['chart']['result'] == null) return;
+
         final result = data['chart']['result'][0];
         final indicators = result['indicators']['quote'][0];
-        final timestamps = result['timestamp'] as List<dynamic>;
+        final timestamps = result['timestamp'] as List<dynamic>?;
 
-        final List<double> opens = List<double>.from(indicators['open']);
-        final List<double> highs = List<double>.from(indicators['high']);
-        final List<double> lows = List<double>.from(indicators['low']);
-        final List<double> closes = List<double>.from(indicators['close']);
-        final List<double> volumes = List<double>.from(indicators['volume']);
+        if (timestamps == null) return;
+
+        final List<dynamic> opens = indicators['open'] ?? [];
+        final List<dynamic> highs = indicators['high'] ?? [];
+        final List<dynamic> lows = indicators['low'] ?? [];
+        final List<dynamic> closes = indicators['close'] ?? [];
+        final List<dynamic> volumes = indicators['volume'] ?? [];
 
         List<CandleModel> loadedCandles = [];
 
-        // Konversi data dari Yahoo menjadi bentuk CandleModel milikmu
+        // Konversi data dari Yahoo menjadi bentuk CandleModel secara aman
         for (int i = 0; i < timestamps.length; i++) {
-          // Skip data jika ada komponen yang null dari server
-          if (opens[i] == null || closes[i] == null) continue; 
+          if (opens[i] == null || highs[i] == null || lows[i] == null || closes[i] == null) {
+            continue; 
+          }
 
           loadedCandles.add(CandleModel(
-            open: opens[i],
-            high: highs[i],
-            low: lows[i],
-            close: closes[i],
-            volume: volumes[i],
+            open: (opens[i] as num).toDouble(),
+            high: (highs[i] as num).toDouble(),
+            low: (lows[i] as num).toDouble(),
+            close: (closes[i] as num).toDouble(),
+            volume: volumes[i] != null ? (volumes[i] as num).toDouble() : 0.0,
           ));
         }
 
-        // Ambil maksimal 30 candle terakhir agar pas dengan ukuran chart HP kamu
+        // Ambil maksimal 30 candle terakhir agar pas dengan ukuran chart HP
         if (loadedCandles.length > 30) {
           loadedCandles = loadedCandles.sublist(loadedCandles.length - 30);
         }
