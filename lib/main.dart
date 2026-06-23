@@ -213,9 +213,9 @@ class ShockwavePainter extends CustomPainter {
   }
 }
 
-// =================================================================
+// ===========================================
 // 📊 1. HALAMAN UTAMA / DASHBOARD (INPUTAN LANGSUNG NEMPEL)
-// =================================================================
+// ============================================
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
 
