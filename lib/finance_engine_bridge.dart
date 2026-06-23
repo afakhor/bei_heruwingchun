@@ -1,24 +1,23 @@
 import 'dart:ffi';
 import 'dart:io';
 
-// 1. Definisikan Struct di Dart yang strukturnya HARUS PERSIS sama dengan C++
+// 1. Definisikan Struct FFI (Urutan wajib sama persis dengan struct di C++)
 final class SignalResult extends Struct {
   @Int32()
-  external int score; // Total skor (0 - 100)
+  external int score; // Menghubungkan ke int32_t score
 
   @Int32()
-  external int action; // 1 = BUY, 0 = HOLD, -1 = AVOID
+  external int action; // Menghubungkan ke int32_t action
 
   @Double()
-  external double stopLoss; // Batas Cut Loss berbasis ATR
+  external double stopLoss; // OTOMATIS membaca memory stop_loss milik C++
 
   @Double()
-  external double takeProfit; // Target Profit berbasis ATR
+  external double takeProfit; // OTOMATIS membaca memory take_profit milik C++
 }
 
-// 2. Definisikan tipe fungsi (Signature) untuk kebutuhan FFI
-// Tipe tanda tangan C++ (Menggunakan tipe data ffi Dart)
-typedef EvaluateStockSignalC = SignalResult Function(
+// 2. Tanda tangan fungsi untuk sisi Native C++
+typedef EvaluateStockSignalNative = SignalResult Function(
   Double close,
   Double ema5,
   Double ema20,
@@ -29,7 +28,7 @@ typedef EvaluateStockSignalC = SignalResult Function(
   Double atr,
 );
 
-// Tipe tanda tangan Dart (Tipe data primitif Dart standar)
+// 3. Tanda tangan fungsi untuk sisi Dart
 typedef EvaluateStockSignalDart = SignalResult Function(
   double close,
   double ema5,
@@ -42,23 +41,22 @@ typedef EvaluateStockSignalDart = SignalResult Function(
 );
 
 class FinanceEngineBridge {
-  late DynamicLibrary _nativeLib;
-  late EvaluateStockSignalDart _evaluateStockSignal;
+  late final DynamicLibrary _dylib;
+  late final EvaluateStockSignalDart _evaluateStockSignal;
 
   FinanceEngineBridge() {
-    // 3. Load Library C++ (.so) saat aplikasi berjalan di Android
+    // Membuka library binary C++ di Android (.so)
     if (Platform.isAndroid) {
-      // Nama 'libfinance_engine.so' otomatis digenerate oleh CMake yang kita daftarkan kemarin
-      _nativeLib = DynamicLibrary.open('libfinance_engine.so');
+      _dylib = DynamicLibrary.open('libfinance_engine.so');
     } else {
-      // Fail-safe jika dicoba di platform lain saat development
-      _nativeLib = DynamicLibrary.process();
+      _dylib = DynamicLibrary.process();
     }
 
-    // 4. Hubungkan fungsi Dart ke fungsi C++ asli
-    _evaluateStockSignal = _nativeLib
-        .lookup<NativeFunction<EvaluateStockSignalC>>('evaluate_stock_signal')
-        .asFunction<EvaluateStockSignalDart>();
+    // 4. Hubungkan ke nama fungsi asli C++ kamu: 'evaluate_stock_signal'
+    _evaluateStockSignal = _dylib
+        .lookupFunction<EvaluateStockSignalNative, EvaluateStockSignalDart>(
+          'evaluate_stock_signal',
+        );
   }
 
   // 5. Fungsi bersih yang siap dipanggil dari UI Flutter kamu
@@ -72,7 +70,7 @@ class FinanceEngineBridge {
     required double adx,
     required double atr,
   }) {
-    // Tinggal panggil, hitungan milidetik selesai di level C++
+    // Mengembalikan data matang hasil kalkulasi C++ langsung ke UI
     return _evaluateStockSignal(close, ema5, ema20, ema200, rsi, vwap, adx, atr);
   }
 }
