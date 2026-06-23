@@ -54,6 +54,20 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/
+
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/icon/app_icon.png"
+  min_sdk_android: 21
+
+flutter_native_splash:
+  color: "#161a25" # Warna background splash screen (ini warna gelap tema trading kamu)
+  image: "assets/icon/app_icon.png"
+  android: true
+  ios: true
+
   # assets:
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
