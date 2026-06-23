@@ -3,7 +3,7 @@ name: Build Android APK (C++ Integrated)
 on:
   push:
     branches:
-      - main  # Trigger otomatis jalan setiap kamu push ke branch main
+      - main  # Trigger otomatis berjalan setiap kamu push ke branch main
 
 jobs:
   build:
@@ -32,27 +32,31 @@ jobs:
       # 4. Ambil semua library dependency yang terdaftar di pubspec.yaml
       - name: Install Flutter Dependencies
         run: flutter pub get
-      # A. PERINTAH GANTI NAMA PACKAGE (Ganti com.boss.scalping sesuai mau kamu)
+
+      # 5. Jalankan tools otomatisasi aplikasi (Menggunakan dart run modern)
       - name: Change Package Name
-        run: flutter pub run change_app_package_name:main com.porto.heruwingchun
+        run: dart run change_app_package_name:main com.porto.heruwingchun
 
-      # B. PERINTAH GENERATE ICON APLIKASI
+      # Pastikan file assets/icon/app_icon.png sudah kamu push ke git sebelum menjalankan ini
       - name: Generate App Icon
-        run: flutter pub run flutter_launcher_icons
+        run: dart run flutter_launcher_icons
 
-      # C. PERINTAH GENERATE SPLASH SCREEN
       - name: Generate Splash Screen
-        run: flutter pub run flutter_native_splash:create
+        run: dart run flutter_native_splash:create
 
-      # 5. Proses Kompilasi Utama:
-      # Perintah ini otomatis mendeteksi CMakeLists.txt, mengompilasi finance_engine.cpp
-      # menjadi libfinance_engine.so, lalu membungkusnya ke dalam file APK release.
+      # 6. PENYELAMAT C++: Setel Android NDK Environment agar CMake mendeteksi compiler C++
+      - name: Set up Android NDK Path
+        run: |
+          echo "ANDROID_NDK_ROOT=$ANDROID_HOME/ndk/25.2.9519653" >> $GITHUB_ENV
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/25.2.9519653" >> $GITHUB_ENV
+
+      # 7. Proses Kompilasi Utama: Mengompilasi C++ dan Dart menjadi satu kesatuan
       - name: Build Release APK
         run: flutter build apk --release
 
-      # 6. Upload hasilnya agar bisa kamu download langsung dari HP kamu
+      # 8. Upload hasilnya (Menggunakan wildcard app-*.apk agar file signed maupun unsigned tetap terangkat)
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: bei-trade-app-release
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: build/app/outputs/flutter-apk/app-*.apk
