@@ -1,86 +1,74 @@
 import 'dart:async';
-import 'dart:math';
-
-class CandleModel {
-  final double open;
-  final double high;
-  final double low;
-  final double close;
-  final double volume;
-
-  CandleModel({
-    required this.open,
-    required this.high,
-    required this.low,
-    required this.close,
-    required this.volume,
-  });
-}
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'stock_stream_service.dart'; // import model candlenya
 
 class StockStreamService {
   final StreamController<List<CandleModel>> _controller = StreamController<List<CandleModel>>.broadcast();
-  List<CandleModel> _history = [];
   Timer? _timer;
 
   Stream<List<CandleModel>> get chartStream => _controller.stream;
 
   void startStreaming(String ticker) {
     _timer?.cancel();
-    _history.clear();
 
-    final random = Random();
-    String cleanTicker = ticker.toUpperCase().trim();
-    
-    // ALGORITMA PINTAR: Bikin harga awal otomatis berdasarkan text kode saham
-    // Jadi kalau ketik BMRI harganya akan selalu berkisar di area yang sama
-    int codeSum = cleanTicker.runes.fold(0, (sum, rune) => sum + rune);
-    double lastClose = ((codeSum * 7) % 8000) + 50.0; // Rentang Rp50 s/d Rp8050
-
-    // Override khusus untuk saham-saham jangkar biar presisi
-    if (cleanTicker == 'BBRI') lastClose = 5200.0;
-    if (cleanTicker == 'GOTO') lastClose = 65.0;
-    if (cleanTicker == 'BBCA') lastClose = 10100.0;
-
-    // Buat 20 candle awal secara dinamis
-    for (int i = 0; i < 20; i++) {
-      double open = lastClose + (random.nextDouble() - 0.5) * (lastClose * 0.01);
-      double close = open + (random.nextDouble() - 0.48) * (lastClose * 0.012);
-      double high = max(open, close) + random.nextDouble() * (lastClose * 0.005);
-      double low = min(open, close) - random.nextDouble() * (lastClose * 0.005);
-      lastClose = close;
-
-      _history.add(CandleModel(open: open, high: high, low: low, close: close, volume: 500));
-    }
-    _controller.add(_history);
-
-    // Loop Running Trade
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_history.isEmpty) return;
-      
-      CandleModel lastCandle = _history.last;
-      double volatility = lastCandle.close * 0.004; 
-      double newClose = lastCandle.close + (random.nextDouble() - 0.48) * volatility;
-      
-      // Batasi agar harga tidak minus/gocap bawah jika sahamnya ambles
-      if (newClose < 50) newClose = 50; 
-
-      _history[_history.length - 1] = CandleModel(
-        open: lastCandle.open,
-        high: max(lastCandle.high, newClose),
-        low: min(lastCandle.low, newClose),
-        close: newClose,
-        volume: lastCandle.volume + 15,
-      );
-
-      if (timer.tick % 10 == 0) {
-        _history.add(CandleModel(open: newClose, high: newClose, low: newClose, close: newClose, volume: 0));
-        if (_history.length > 30) _history.removeAt(0);
-      }
-
-      if (!_controller.isClosed) {
-        _controller.add(List.from(_history));
-      }
+    // Jalankan pemanggilan data pertama kali, lalu ulangi setiap 10 detik (biar hemat kuota & gak di-ban Yahoo)
+    _fetchRealData(ticker);
+    _timer = Timer.periodic(const Duration(seconds: 10), (timer) {
+      _fetchRealData(ticker);
     });
+  }
+
+  Future<void> _fetchRealData(String ticker) async {
+    String cleanTicker = ticker.toUpperCase().trim();
+    // Tambahkan .JK jika belum ada untuk menandakan bursa Indonesia IDX
+    String yahooTicker = cleanTicker.endsWith('.JK') ? cleanTicker : '$cleanTicker.JK';
+
+    // Link API Publik Yahoo Finance untuk mengambil data chart intraday (interval 1 menit, range 1 hari)
+    final url = Uri.parse('https://query1.finance.yahoo.com/v8/finance/chart/$yahooTicker?interval=1m&range=1d');
+
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final result = data['chart']['result'][0];
+        final indicators = result['indicators']['quote'][0];
+        final timestamps = result['timestamp'] as List<dynamic>;
+
+        final List<double> opens = List<double>.from(indicators['open']);
+        final List<double> highs = List<double>.from(indicators['high']);
+        final List<double> lows = List<double>.from(indicators['low']);
+        final List<double> closes = List<double>.from(indicators['close']);
+        final List<double> volumes = List<double>.from(indicators['volume']);
+
+        List<CandleModel> loadedCandles = [];
+
+        // Konversi data dari Yahoo menjadi bentuk CandleModel milikmu
+        for (int i = 0; i < timestamps.length; i++) {
+          // Skip data jika ada komponen yang null dari server
+          if (opens[i] == null || closes[i] == null) continue; 
+
+          loadedCandles.add(CandleModel(
+            open: opens[i],
+            high: highs[i],
+            low: lows[i],
+            close: closes[i],
+            volume: volumes[i],
+          ));
+        }
+
+        // Ambil maksimal 30 candle terakhir agar pas dengan ukuran chart HP kamu
+        if (loadedCandles.length > 30) {
+          loadedCandles = loadedCandles.sublist(loadedCandles.length - 30);
+        }
+
+        if (!_controller.isClosed) {
+          _controller.add(loadedCandles);
+        }
+      }
+    } catch (e) {
+      print("Error ambil data bursa asli: $e");
+    }
   }
 
   void dispose() {
