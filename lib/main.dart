@@ -642,7 +642,7 @@ class _StockScreenerScreenState extends State<StockScreenerScreen> {
             ),
             const SizedBox(height: 10),
             
-            // List Hasil Screened
+                        // List Hasil Screened
             Expanded(
               child: ListView.builder(
                 itemCount: filteredStocks.length,
@@ -668,7 +668,7 @@ class _StockScreenerScreenState extends State<StockScreenerScreen> {
       ),
     );
   }
-} // 🔑 FILE UTAMAMU BERAKHIR DI SINI! JANGAN ADA KODE APAPUN LAGI DI BAWAH INI.
+} // 🔑 FILE KAMU WAJIB BERAKHIR DI SINI! KOSONGKAN SEGALANYA DI BAWAH GARIS INI.
 // =================================================================
 // RADAR SCREENER DATA SAHAM
 // =================================================================
