@@ -352,7 +352,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // =================================================================
-// 📈 2. MODUL LIVE VIEW & PROSES ANALISA ENGINE
+// 📈 2. MODUL LIVE VIEW & PROSES ANALISA ENGINE (VERSI AMAN BUILD)
 // =================================================================
 class LiveTradingView extends StatefulWidget {
   final String apiKey;
@@ -373,15 +373,15 @@ class _LiveTradingViewState extends State<LiveTradingView> {
   @override
   void initState() {
     super.initState();
-    // 💡 CATATAN: Jika StockStreamService belum diupdate, hapus ', apiKey: widget.apiKey' sementara agar bisa build
-    _streamService.startStreaming(_currentTicker, apiKey: widget.apiKey);
+    // 📡 Menggunakan fungsi standar bawaanmu tanpa parameter apiKey dulu
+    _streamService.startStreaming(_currentTicker);
   }
 
   @override
   void didUpdateWidget(covariant LiveTradingView oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.apiKey != widget.apiKey) {
-      _streamService.startStreaming(_currentTicker, apiKey: widget.apiKey);
+      _streamService.startStreaming(_currentTicker);
     }
   }
 
@@ -398,7 +398,7 @@ class _LiveTradingViewState extends State<LiveTradingView> {
         _currentTicker = kodeBaru.toUpperCase().trim();
         _isSearching = false;
         _searchController.clear();
-        _streamService.startStreaming(_currentTicker, apiKey: widget.apiKey);
+        _streamService.startStreaming(_currentTicker);
       });
     }
   }
@@ -559,7 +559,7 @@ class _LiveTradingViewState extends State<LiveTradingView> {
       ],
     );
   }
-} // 🔑 LENGKAP DAN DIKUNCI DI SINI!
+}
 
 // =================================================================
 // 📱 3. SEKAT LUAR: FITUR AUTOMATIC STOCK SCREENER CO-PILOT
