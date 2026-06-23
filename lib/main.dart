@@ -212,6 +212,98 @@ class ShockwavePainter extends CustomPainter {
     return oldDelegate.progress != progress;
   }
 }
+// ==========================================
+// 📥 FORM INPUTAN API KEY (HALAMAN KEDUA)
+// ==========================================
+class HalamanInputKey extends StatefulWidget {
+  const HalamanInputKey({super.key});
+
+  @override
+  State<HalamanInputKey> createState() => _HalamanInputKeyState();
+}
+
+class _HalamanInputKeyState extends State<HalamanInputKey> {
+  final TextEditingController _apiInputController = TextEditingController();
+
+  @override
+  void dispose() {
+    _apiInputController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Icon(Icons.key_rounded, size: 70, color: Color(0xff26a69a)),
+              const SizedBox(height: 25),
+              const Text(
+                "SETUP API KEY",
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+              const SizedBox(height: 30),
+
+              // Kotak Form Inputan API Key
+              TextField(
+                controller: _apiInputController,
+                autofocus: true,
+                style: const TextStyle(color: Colors.white, fontSize: 16),
+                decoration: InputDecoration(
+                  labelText: "Masukkan Twelve Data API Key Anda",
+                  labelStyle: const TextStyle(color: Colors.grey),
+                  prefixIcon: const Icon(Icons.vpn_key, color: Color(0xff26a69a)),
+                  filled: true,
+                  fillColor: const Color(0xff1c2030),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xff26a69a), width: 2),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Colors.grey, width: 1),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 25),
+
+              // Tombol Gas Aktifkan Engine
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xff26a69a),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: () {
+                  String apiKeyTersimpan = _apiInputController.text.trim();
+                  if (apiKeyTersimpan.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Isi dulu API Key-nya, Bossku!"),
+                        backgroundColor: Colors.redAccent,
+                      ),
+                    );
+                    return;
+                  }
+                  
+                  // 🔥 Sambungkan ke Halaman Dashboard Utama kamu di sini setelah tombol di-klik
+                  print("API Key Berhasil Dieksekusi: $apiKeyTersimpan");
+                },
+                child: const Text("AKTIFKAN ENGINE", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 // =================================================================
 // NAVIGASI UTAMA (DASHBOARD)
