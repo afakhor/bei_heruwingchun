@@ -32,6 +32,17 @@ jobs:
       # 4. Ambil semua library dependency yang terdaftar di pubspec.yaml
       - name: Install Flutter Dependencies
         run: flutter pub get
+      # A. PERINTAH GANTI NAMA PACKAGE (Ganti com.boss.scalping sesuai mau kamu)
+      - name: Change Package Name
+        run: flutter pub run change_app_package_name:main com.porto.heruwingchun
+
+      # B. PERINTAH GENERATE ICON APLIKASI
+      - name: Generate App Icon
+        run: flutter pub run flutter_launcher_icons
+
+      # C. PERINTAH GENERATE SPLASH SCREEN
+      - name: Generate Splash Screen
+        run: flutter pub run flutter_native_splash:create
 
       # 5. Proses Kompilasi Utama:
       # Perintah ini otomatis mendeteksi CMakeLists.txt, mengompilasi finance_engine.cpp
