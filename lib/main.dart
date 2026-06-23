@@ -562,7 +562,7 @@ class _LiveTradingViewState extends State<LiveTradingView> {
 }
 
 // =================================================================
-// 📱 3. FITUR RADAR SCREENER DATA SAHAM (VERSI FINAL - AMAN BUILD)
+// 📱 3. FITUR RADAR SCREENER DATA SAHAM (UPGRADED VERSION)
 // =================================================================
 class ScreenedStockModel {
   final int rank;
@@ -592,7 +592,6 @@ class StockScreenerScreen extends StatefulWidget {
 }
 
 class _StockScreenerScreenState extends State<StockScreenerScreen> {
-  // 5 Data saham kesayanganmu kembali utuh dan aman
   final List<ScreenedStockModel> _allStocks = [
     ScreenedStockModel(rank: 1, ticker: 'BCIP', name: 'Bumi Citra Permai Tbk', price: 84, changePercent: 14.2, score: 95, strategyTag: 'Fast Trade / Scalping'),
     ScreenedStockModel(rank: 2, ticker: 'BRIS', name: 'Bank Syariah Indonesia Tbk', price: 2540, changePercent: 6.8, score: 89, strategyTag: 'Volume Spike Breakout'),
@@ -601,14 +600,9 @@ class _StockScreenerScreenState extends State<StockScreenerScreen> {
     ScreenedStockModel(rank: 5, ticker: 'TLKM', name: 'Telkom Indonesia Tbk', price: 3640, changePercent: -0.5, score: 65, strategyTag: 'Sideways Testing Support'),
   ];
 
-  List<ScreenedStockModel> _filteredStocks = [];
   final TextEditingController _screenerSearchController = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    _filteredStocks = _allStocks; 
-  }
+  String _searchKeyword = "";
+  String _selectedStrategyGroup = "ALL"; // Menyimpan filter kategori aktif
 
   @override
   void dispose() {
@@ -616,25 +610,25 @@ class _StockScreenerScreenState extends State<StockScreenerScreen> {
     super.dispose();
   }
 
-  // Fungsi filter pencarian dipertegas tipe datanya agar tidak terbaca Object?
-  void _runFilter(String keyword) {
-    List<ScreenedStockModel> results = [];
-    if (keyword.isEmpty) {
-      results = _allStocks;
-    } else {
-      results = _allStocks
-          .where((ScreenedStockModel stock) => stock.ticker.toLowerCase().contains(keyword.toLowerCase()) || 
-                                              stock.name.toLowerCase().contains(keyword.toLowerCase()))
-          .toList();
-    }
-
-    setState(() {
-      _filteredStocks = results;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
+    // Proses penyaringan gabungan: Keyword Search + Quick Filter Chips
+    final filteredResults = _allStocks.where((ScreenedStockModel stock) {
+      final matchesKeyword = stock.ticker.toLowerCase().contains(_searchKeyword.toLowerCase()) ||
+                             stock.name.toLowerCase().contains(_searchKeyword.toLowerCase());
+      
+      if (_selectedStrategyGroup == "ALL") {
+        return matchesKeyword;
+      } else if (_selectedStrategyGroup == "SCALPING") {
+        return matchesKeyword && stock.strategyTag.contains("Fast Trade");
+      } else if (_selectedStrategyGroup == "BREAKOUT") {
+        return matchesKeyword && stock.strategyTag.contains("Breakout");
+      } else if (_selectedStrategyGroup == "UPTREND") {
+        return matchesKeyword && stock.strategyTag.contains("Uptrend");
+      }
+      return matchesKeyword;
+    }).toList();
+
     return Scaffold(
       backgroundColor: const Color(0xff161a25),
       appBar: AppBar(
@@ -648,10 +642,15 @@ class _StockScreenerScreenState extends State<StockScreenerScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // 1. INPUT SEARCH
             TextField(
               controller: _screenerSearchController,
-              onChanged: _runFilter, 
               style: const TextStyle(color: Colors.white),
+              onChanged: (value) {
+                setState(() {
+                  _searchKeyword = value;
+                });
+              },
               decoration: InputDecoration(
                 labelText: 'Cari hasil filteran harian...',
                 labelStyle: const TextStyle(color: Colors.grey),
@@ -661,15 +660,30 @@ class _StockScreenerScreenState extends State<StockScreenerScreen> {
                 fillColor: const Color(0xff1f222e),
               ),
             ),
+            const SizedBox(height: 12),
+
+            // 2. FITUR BARU: QUICK FILTER CHIPS (Horizontal Scroll)
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildFilterChip("ALL", "Semua Radar"),
+                  _buildFilterChip("SCALPING", "⚡ Fast Trade"),
+                  _buildFilterChip("BREAKOUT", "🔥 Breakout"),
+                  _buildFilterChip("UPTREND", "📈 Uptrend"),
+                ],
+              ),
+            ),
             const SizedBox(height: 15),
 
+            // 3. LIST DAFTAR SAHAM
             Expanded(
-              child: _filteredStocks.isEmpty
-                  ? const Center(child: Text('Saham tidak ditemukan dalam radar hari ini.', style: TextStyle(color: Colors.white)))
+              child: filteredResults.isEmpty
+                  ? const Center(child: Text('Saham tidak ditemukan dalam radar harian ini.', style: TextStyle(color: Colors.white)))
                   : ListView.builder(
-                      itemCount: _filteredStocks.length,
+                      itemCount: filteredResults.length,
                       itemBuilder: (context, index) {
-                        final stock = _filteredStocks[index];
+                        final stock = filteredResults[index];
                         bool isPositive = stock.changePercent >= 0;
 
                         return Card(
@@ -677,10 +691,16 @@ class _StockScreenerScreenState extends State<StockScreenerScreen> {
                           margin: const EdgeInsets.symmetric(vertical: 6),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                           child: ListTile(
+                            onTap: () {
+                              // Aksi ketika saham diklik (bisa dipasang navigasi balik ke Chart)
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Mengalihkan analisa ke ${stock.ticker}'), duration: const Duration(seconds: 1)),
+                              );
+                            },
                             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                             leading: CircleAvatar(
-                              backgroundColor: stock.rank <= 2 ? const Color(0xff26a69a) : Colors.grey[800],
-                              child: Text('#${stock.rank}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                              backgroundColor: stock.score >= 90 ? const Color(0xff26a69a) : Colors.grey[800],
+                              child: Text('${stock.score}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
                             ),
                             title: Row(
                               children: [
@@ -731,164 +751,23 @@ class _StockScreenerScreenState extends State<StockScreenerScreen> {
       ),
     );
   }
-} // 🔑 FILE UTAMA SELESAI DAN TERKUNCI RAPAT DI SINI. JANGAN ADA APAPUN LAGI DI BAWAH INI!
 
-// =================================================================
-// RADAR SCREENER DATA SAHAM
-// =================================================================
-class ScreenedStockModel {
-  final int rank;
-  final String ticker;
-  final String name;
-  final double price;
-  final double changePercent;
-  final int score;
-  final String strategyTag;
-
-  ScreenedStockModel({
-    required this.rank,
-    required this.ticker,
-    required this.name,
-    required this.price,
-    required this.changePercent,
-    required this.score,
-    required this.strategyTag,
-  });
-}
-
-class StockScreenerScreen extends StatefulWidget {
-  const StockScreenerScreen({super.key});
-
-  @override
-  State<StockScreenerScreen> createState() => _StockScreenerScreenState();
-}
-
-class _StockScreenerScreenState extends State<StockScreenerScreen> {
-  final List<ScreenedStockModel> _allStocks = [
-    ScreenedStockModel(rank: 1, ticker: 'BCIP', name: 'Bumi Citra Permai Tbk', price: 84, changePercent: 14.2, score: 95, strategyTag: 'Fast Trade / Scalping'),
-    ScreenedStockModel(rank: 2, ticker: 'BRIS', name: 'Bank Syariah Indonesia Tbk', price: 2540, changePercent: 6.8, score: 89, strategyTag: 'Volume Spike Breakout'),
-    ScreenedStockModel(rank: 3, ticker: 'ANTM', name: 'Aneka Tambang Tbk', price: 1620, changePercent: 4.5, score: 82, strategyTag: 'EMA Cross Uptrend'),
-    ScreenedStockModel(rank: 4, ticker: 'BBRI', name: 'Bank Rakyat Indonesia Tbk', price: 5225, changePercent: 1.8, score: 78, strategyTag: 'Buy on Weakness'),
-    ScreenedStockModel(rank: 5, ticker: 'TLKM', name: 'Telkom Indonesia Tbk', price: 3640, changePercent: -0.5, score: 65, strategyTag: 'Sideways Testing Support'),
-  ];
-
-  List<ScreenedStockModel> _filteredStocks = [];
-  final TextEditingController _screenerSearchController = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    _filteredStocks = _allStocks; 
-  }
-
-  void _runFilter(String keyword) {
-    List<ScreenedStockModel> results = [];
-    if (keyword.isEmpty) {
-      results = _allStocks;
-    } else {
-      results = _allStocks
-          .where((stock) => stock.ticker.toLowerCase().contains(keyword.toLowerCase()) || 
-                            stock.name.toLowerCase().contains(keyword.toLowerCase()))
-          .toList();
-    }
-
-    setState(() {
-      _filteredStocks = results;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xff161a25),
-      appBar: AppBar(
-        title: const Text('Top Filtered Stocks Today'),
-        backgroundColor: const Color(0xff1c2030),
-        centerTitle: true,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              controller: _screenerSearchController,
-              onChanged: _runFilter, 
-              decoration: InputDecoration(
-                labelText: 'Cari hasil filteran harian...',
-                suffixIcon: const Icon(Icons.search, color: Colors.greenAccent),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                filled: true,
-                fillColor: const Color(0xff1f222e),
-              ),
-            ),
-            const SizedBox(height: 15),
-
-            Expanded(
-              child: _filteredStocks.isEmpty
-                  ? const Center(child: Text('Saham tidak ditemukan dalam radar hari ini.'))
-                  : ListView.builder(
-                      itemCount: _filteredStocks.length,
-                      itemBuilder: (context, index) {
-                        final stock = _filteredStocks[index];
-                        bool isPositive = stock.changePercent >= 0;
-
-                        return Card(
-                          color: const Color(0xff1f222e),
-                          margin: const EdgeInsets.symmetric(vertical: 6),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            leading: CircleAvatar(
-                              backgroundColor: stock.rank <= 2 ? const Color(0xff26a69a) : Colors.grey[800],
-                              child: Text('#${stock.rank}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
-                            ),
-                            title: Row(
-                              children: [
-                                Text(stock.ticker, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: SingleChildScrollView(
-                                    scrollDirection: Axis.horizontal,
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: Colors.blueGrey.withOpacity(0.3),
-                                        borderRadius: BorderRadius.circular(4)
-                                      ),
-                                      child: Text(stock.strategyTag, style: const TextStyle(fontSize: 10, color: Colors.cyanAccent)),
-                                    ),
-                                  ),
-                                )
-                              ],
-                            ),
-                            subtitle: Padding(
-                              padding: const EdgeInsets.only(top: 4.0), 
-                              child: Text(stock.name, style: const TextStyle(color: Colors.grey, fontSize: 12), overflow: TextOverflow.ellipsis),
-                            ),
-                            trailing: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text("Rp${stock.price.toStringAsFixed(0)}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                                const SizedBox(height: 4),
-                                Text(
-                                  "${isPositive ? '+' : ''}${stock.changePercent.toStringAsFixed(1)}%",
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13,
-                                    color: isPositive ? const Color(0xff26a69a) : const Color(0xffef5350),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-            ),
-          ],
-        ),
+  // Helper Widget untuk membuat build chip dengan style gelap/terang seragam
+  Widget _buildFilterChip(String groupKey, String label) {
+    bool isSelected = _selectedStrategyGroup == groupKey;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8.0),
+      child: ChoiceChip(
+        label: Text(label),
+        selected: isSelected,
+        selectedColor: const Color(0xff26a69a),
+        backgroundColor: const Color(0xff1f222e),
+        labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.grey, fontWeight: FontWeight.bold, fontSize: 12),
+        onSelected: (bool selected) {
+          setState(() {
+            _selectedStrategyGroup = selected ? groupKey : "ALL";
+          });
+        },
       ),
     );
   }
