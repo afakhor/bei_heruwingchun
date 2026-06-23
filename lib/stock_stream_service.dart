@@ -23,7 +23,7 @@ class StockStreamService {
   Timer? _timer;
 
   // 🔥 TARUH API KEY TWELVE DATA MU DI SINI (Ganti teks di bawah ini)
-  final String _apiKey = "6640daaab69d434abf1fc39469834748";
+  final String _apiKey = "d1dcab9062c74267bf7845ca1922e7a2";
 
   Stream<List<CandleModel>> get chartStream => _controller.stream;
 
