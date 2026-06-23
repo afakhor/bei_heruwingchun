@@ -373,15 +373,16 @@ class _LiveTradingViewState extends State<LiveTradingView> {
   @override
   void initState() {
     super.initState();
-    // 📡 Menggunakan fungsi standar bawaanmu tanpa parameter apiKey dulu
-    _streamService.startStreaming(_currentTicker);
+    // ✅ PERBAIKAN 1: Tambahkan widget.apiKey agar pipa data terbuka saat aplikasi start
+    _streamService.startStreaming(_currentTicker, widget.apiKey);
   }
 
   @override
   void didUpdateWidget(covariant LiveTradingView oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.apiKey != widget.apiKey) {
-      _streamService.startStreaming(_currentTicker);
+      // ✅ PERBAIKAN 2: Tambahkan widget.apiKey jika ada perubahan key dari control panel
+      _streamService.startStreaming(_currentTicker, widget.apiKey);
     }
   }
 
@@ -398,7 +399,8 @@ class _LiveTradingViewState extends State<LiveTradingView> {
         _currentTicker = kodeBaru.toUpperCase().trim();
         _isSearching = false;
         _searchController.clear();
-        _streamService.startStreaming(_currentTicker);
+        // ✅ PERBAIKAN 3: Tambahkan widget.apiKey saat kamu mengetik/mengganti kode saham baru
+        _streamService.startStreaming(_currentTicker, widget.apiKey);
       });
     }
   }
@@ -448,6 +450,24 @@ class _LiveTradingViewState extends State<LiveTradingView> {
         StreamBuilder<List<CandleModel>>(
           stream: _streamService.chartStream,
           builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              // ✅ BONUS: Menampilkan pesan error asli dari Twelve Data di layar HP biar jelas kalau limit habis/salah key
+              return Container(
+                height: 200,
+                color: const Color(0xff1c2030),
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Text(
+                      "Gagal Memuat Data:\n${snapshot.error}",
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              );
+            }
+
             if (!snapshot.hasData || snapshot.data!.isEmpty) {
               return const Center(
                 child: Padding(
