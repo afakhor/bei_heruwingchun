@@ -2,14 +2,17 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-class CandleModel {
+// ✅ KEMBALI MENGGUNAKAN CANDLEDATA & TIMESTAMP BIAR KLOP SAMA MAIN.DART
+class CandleData {
+  final DateTime timestamp;
   final double open;
   final double high;
   final double low;
   final double close;
   final double volume;
 
-  CandleModel({
+  CandleData({
+    required this.timestamp,
     required this.open,
     required this.high,
     required this.low,
@@ -19,73 +22,55 @@ class CandleModel {
 }
 
 class StockStreamService {
-  final StreamController<List<CandleModel>> _controller = StreamController<List<CandleModel>>.broadcast();
-  Timer? _timer;
+  final StreamController<List<CandleData>> _chartStreamController = 
+      StreamController<List<CandleData>>.broadcast();
 
-  Stream<List<CandleModel>> get chartStream => _controller.stream;
+  Stream<List<CandleData>> get chartStream => _chartStreamController.stream;
 
-  // 💡 BARU: startStreaming sekarang menerima apiKey dinamis dari Control Panel UI-mu
-  void startStreaming(String ticker, String apiKey) {
-    _timer?.cancel();
-
-    _fetchTwelveData(ticker, apiKey);
-    _timer = Timer.periodic(const Duration(seconds: 15), (timer) {
-      _fetchTwelveData(ticker, apiKey);
-    });
-  }
-
-  Future<void> _fetchTwelveData(String ticker, String apiKey) async {
-    String cleanTicker = ticker.toUpperCase().trim();
-
-    // 🚨 PERBAIKAN 1: Gunakan ticker asli yang kamu ketik tanpa memaksa akhiran :IDX
-    // (Biar kalau ketik AAPL tidak berubah jadi AAPL:IDX yang bikin server bingung)
-    String symbol = cleanTicker; 
-
+  void startStreaming(String ticker, String apiKey) async {
     final url = Uri.parse(
-'https://api.twelvedata.com/time_series?symbol=$ticker&interval=1min&exchange=XIDX&apikey=$apiKey'
+      'https://api.goapi.id/v1/stock/idx/${ticker.toUpperCase()}/historical?api_key=$apiKey'
     );
 
     try {
       final response = await http.get(url);
+
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final jsonMap = jsonDecode(response.body);
 
-        // 🚨 PERBAIKAN 2: Jika API bermasalah, kirim pesan error-nya ke UI agar loading berhenti!
-        if (data['status'] != 'ok') {
-          print("Twelve Data Error: ${data['message']}");
-          _controller.addError(data['message'] ?? "Terjadi kesalahan API Twelve Data.");
-          return;
-        }
+        if (jsonMap['status'] == 'success' && jsonMap['data'] != null) {
+          final List<dynamic> dataHasil = jsonMap['data']['results'] ?? [];
+          
+          List<CandleData> loadedCandles = [];
 
-        final List<dynamic> values = data['values'] ?? [];
-        List<CandleModel> loadedCandles = [];
+          for (var item in dataHasil) {
+            loadedCandles.add(CandleData(
+              timestamp: DateTime.parse(item['date'] ?? DateTime.now().toString()), // 👈 diubah ke timestamp
+              open: (item['open'] as num).toDouble(),
+              high: (item['high'] as num).toDouble(),
+              low: (item['low'] as num).toDouble(),
+              close: (item['close'] as num).toDouble(),
+              volume: (item['volume'] as num).toDouble(),
+            ));
+          }
 
-        for (var item in values.reversed) {
-          loadedCandles.add(CandleModel(
-            // Menggunakan double.tryParse agar super aman dari error tipe data String JSON
-            open: double.tryParse(item['open'].toString()) ?? 0.0,
-            high: double.tryParse(item['high'].toString()) ?? 0.0,
-            low: double.tryParse(item['low'].toString()) ?? 0.0,
-            close: double.tryParse(item['close'].toString()) ?? 0.0,
-            volume: double.tryParse(item['volume'].toString()) ?? 0.0,
-          ));
-        }
+          loadedCandles = loadedCandles.reversed.toList();
 
-        if (!_controller.isClosed && loadedCandles.isNotEmpty) {
-          _controller.add(loadedCandles);
+          if (!_chartStreamController.isClosed) {
+            _chartStreamController.add(loadedCandles);
+          }
+        } else {
+          _chartStreamController.addError(jsonMap['message'] ?? "Gagal memuat data dari GoAPI.");
         }
       } else {
-        _controller.addError("Server merespon dengan status code: ${response.statusCode}");
+        _chartStreamController.addError("Server GoAPI merespon error: ${response.statusCode}");
       }
     } catch (e) {
-      print("Koneksi Twelve Data Bermasalah: $e");
-      // 🚨 PERBAIKAN 3: Kirim error crash/koneksi internet ke UI
-      _controller.addError("Koneksi internet bermasalah atau API terblokir.");
+      _chartStreamController.addError("Gagal terhubung ke GoAPI: $e");
     }
   }
 
   void dispose() {
-    _timer?.cancel();
-    _controller.close();
+    _chartStreamController.close();
   }
 }
