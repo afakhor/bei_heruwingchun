@@ -152,7 +152,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                           duration: const Duration(milliseconds: 150),
                           // 🔥 KUNCI KEDUA: Paksa transformasi Matrix skala menyusut tepat di as tengah teks
                           transformAlignment: Alignment.center, 
-                          transform: Matrix4.identity()...scale(_isClicked ? 0.85 : 1.0),
+                          transform: Matrix4.identity()..scale(_isClicked ? 0.85 : 1.0),
                           child: const Text(
                             '👆',
                             key: ValueKey('finger_icon'),
