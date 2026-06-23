@@ -212,18 +212,22 @@ class ShockwavePainter extends CustomPainter {
     return oldDelegate.progress != progress;
   }
 }
-// ==========================================
-// 📥 FORM INPUTAN API KEY (HALAMAN KEDUA)
-// ==========================================
-class HalamanInputKey extends StatefulWidget {
-  const HalamanInputKey({super.key});
+import 'package:flutter/material.dart';
+
+// =================================================================
+// 📊 1. HALAMAN UTAMA / DASHBOARD (INPUTAN LANGSUNG NEMPEL)
+// =================================================================
+class MainNavigationScreen extends StatefulWidget {
+  const MainNavigationScreen({super.key});
 
   @override
-  State<HalamanInputKey> createState() => _HalamanInputKeyState();
+  State<MainNavigationScreen> createState() => _MainNavigationScreenState();
 }
 
-class _HalamanInputKeyState extends State<HalamanInputKey> {
+class _MainNavigationScreenState extends State<MainNavigationScreen> {
   final TextEditingController _apiInputController = TextEditingController();
+  String _apiKeyAktif = "";
+  bool _isEngineRunning = false;
 
   @override
   void dispose() {
@@ -234,69 +238,112 @@ class _HalamanInputKeyState extends State<HalamanInputKey> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
+      appBar: AppBar(
+        title: const Text('Dashboard Sumur Abadi'),
+        backgroundColor: const Color(0xff1c2030),
+        automaticallyImplyLeading: false, 
+      ),
+      // Kita biarkan SingleChildScrollView di luar agar layar bisa di-scroll sampai ke bawah panel analisa
+      body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          padding: const EdgeInsets.all(16.0),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Icon(Icons.key_rounded, size: 70, color: Color(0xff26a69a)),
-              const SizedBox(height: 25),
-              const Text(
-                "SETUP API KEY",
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
-              ),
-              const SizedBox(height: 30),
-
-              // Kotak Form Inputan API Key
-              TextField(
-                controller: _apiInputController,
-                autofocus: true,
-                style: const TextStyle(color: Colors.white, fontSize: 16),
-                decoration: InputDecoration(
-                  labelText: "Masukkan Twelve Data API Key Anda",
-                  labelStyle: const TextStyle(color: Colors.grey),
-                  prefixIcon: const Icon(Icons.vpn_key, color: Color(0xff26a69a)),
-                  filled: true,
-                  fillColor: const Color(0xff1c2030),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xff26a69a), width: 2),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Colors.grey, width: 1),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 25),
-
-              // Tombol Gas Aktifkan Engine
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xff26a69a),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                onPressed: () {
-                  String apiKeyTersimpan = _apiInputController.text.trim();
-                  if (apiKeyTersimpan.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("Isi dulu API Key-nya, Bossku!"),
-                        backgroundColor: Colors.redAccent,
+              // 📥 KOTAK FORM INPUTAN YANG NEMPEL DI HALAMAN UTAMA
+              Card(
+                color: const Color(0xff1c2030),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                elevation: 4,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "CONTROL PANEL API KEY",
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xff26a69a)),
                       ),
-                    );
-                    return;
-                  }
-                  
-                  // 🔥 Sambungkan ke Halaman Dashboard Utama kamu di sini setelah tombol di-klik
-                  print("API Key Berhasil Dieksekusi: $apiKeyTersimpan");
-                },
-                child: const Text("AKTIFKAN ENGINE", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _apiInputController,
+                              style: const TextStyle(color: Colors.white, fontSize: 14),
+                              decoration: InputDecoration(
+                                hintText: "Paste Twelve Data Key...",
+                                hintStyle: const TextStyle(color: Colors.white24),
+                                prefixIcon: const Icon(Icons.vpn_key, color: Colors.grey, size: 20),
+                                filled: true,
+                                fillColor: const Color(0xff131722),
+                                contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: const BorderSide(color: Color(0xff26a69a)),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: const BorderSide(color: Colors.grey),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xff26a69a),
+                              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                            onPressed: () {
+                              String inputKey = _apiInputController.text.trim();
+                              if (inputKey.isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text("API Key kosong, Bossku!")),
+                                );
+                                return;
+                              }
+                              
+                              setState(() {
+                                _apiKeyAktif = inputKey;
+                                _isEngineRunning = true;
+                              });
+                            },
+                            child: const Text("AKTIFKAN", style: TextStyle(fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
               ),
+              const SizedBox(height: 20),
+              
+              // 📊 LOGIKA EKSEKUSI JALUR PIPA DATA
+              _isEngineRunning
+                  ? LiveTradingView(apiKey: _apiKeyAktif) // 🔥 JALANKAN ENGINE GRAFIK SEBENARNYA
+                  : Container(
+                      height: 200,
+                      decoration: BoxDecoration(
+                        color: const Color(0xff1c2030),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.waves_rounded, color: Colors.amberAccent, size: 50),
+                            SizedBox(height: 10),
+                            Text(
+                              "Pipa data tersumbat.\nSilakan input API Key di atas lalu klik AKTIFKAN.",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: Colors.amberAccent, fontSize: 14),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
             ],
           ),
         ),
@@ -306,62 +353,18 @@ class _HalamanInputKeyState extends State<HalamanInputKey> {
 }
 
 // =================================================================
-// NAVIGASI UTAMA (DASHBOARD)
+// 📈 2. MODUL LIVE VIEW & PROSES ANALISA ENGINE (TANPA SCAFOLD)
 // =================================================================
-class MainNavigationScreen extends StatefulWidget {
-  const MainNavigationScreen({super.key});
+class LiveTradingView extends StatefulWidget {
+  final String apiKey; // 🔥 Terima kiriman API Key dari atas
+  
+  const LiveTradingView({super.key, required this.apiKey});
 
   @override
-  State<MainNavigationScreen> createState() => _MainNavigationScreenState();
+  State<LiveTradingView> createState() => _LiveTradingViewState();
 }
 
-class _MainNavigationScreenState extends State<MainNavigationScreen> {
-  int _currentIndex = 0;
-
-  final List<Widget> _pages = [
-    const LiveTradingScreen(), 
-    const StockScreenerScreen(), 
-  ];
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: _pages[_currentIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        backgroundColor: const Color(0xff1c2030),
-        selectedItemColor: const Color(0xff26a69a), 
-        unselectedItemColor: Colors.grey,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.show_chart),
-            label: 'Live Chart',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.filter_list),
-            label: 'Top Filtered',
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// =================================================================
-// HALAMAN LIVE CHART & PROSES ANALISA ENGINE
-// =================================================================
-class LiveTradingScreen extends StatefulWidget {
-  const LiveTradingScreen({super.key});
-
-  @override
-  State<LiveTradingScreen> createState() => _LiveTradingScreenState();
-}
-
-class _LiveTradingScreenState extends State<LiveTradingScreen> {
+class _LiveTradingViewState extends State<LiveTradingView> {
   final FinanceEngineBridge _engine = FinanceEngineBridge();
   final StockStreamService _streamService = StockStreamService();
 
@@ -372,7 +375,17 @@ class _LiveTradingScreenState extends State<LiveTradingScreen> {
   @override
   void initState() {
     super.initState();
-    _streamService.startStreaming(_currentTicker);
+    // 🔥 Jalankan streaming langsung pakai API Key yang diinput di atas
+    _streamService.startStreaming(_currentTicker, apiKey: widget.apiKey);
+  }
+
+  @override
+  void didUpdateWidget(covariant LiveTradingView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Jika user ganti API Key di atas tanpa restart, update langsung pipanya
+    if (oldWidget.apiKey != widget.apiKey) {
+      _streamService.startStreaming(_currentTicker, apiKey: widget.apiKey);
+    }
   }
 
   @override
@@ -388,76 +401,103 @@ class _LiveTradingScreenState extends State<LiveTradingScreen> {
         _currentTicker = kodeBaru.toUpperCase().trim();
         _isSearching = false;
         _searchController.clear();
-        _streamService.startStreaming(_currentTicker);
+        _streamService.startStreaming(_currentTicker, apiKey: widget.apiKey);
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: const Color(0xff1c2030),
-        title: _isSearching
-            ? TextField(
-                controller: _searchController,
-                autofocus: true,
-                textInputAction: TextInputAction.search,
-                decoration: const InputDecoration(
-                  hintText: 'Ketik kode saham... (e.g. BCIP, ANTM, BBCA)',
-                  border: InputBorder.none,
-                  hintStyle: TextStyle(color: Colors.grey),
+    // Return Column langsung, tidak pakai Scaffold lagi agar menyatu dengan Dashboard luar
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // 🔍 INLINE SEARCH BAR (Gantiin AppBar bawaan kemarin)
+        Card(
+          color: const Color(0xff1c2030),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _isSearching
+                      ? TextField(
+                          controller: _searchController,
+                          autofocus: true,
+                          textInputAction: TextInputAction.search,
+                          decoration: const InputDecoration(
+                            hintText: 'Ketik kode saham... (e.g. BCIP, BBRI)',
+                            border: InputBorder.none,
+                            hintStyle: TextStyle(color: Colors.grey),
+                          ),
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                          onSubmitted: _gantiSaham,
+                        )
+                      : Text('Live Radar Engine: $_currentTicker', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 ),
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                onSubmitted: _gantiSaham,
-              )
-            : Text('Live Engine: $_currentTicker'),
-        actions: [
-          IconButton(
-            icon: Icon(_isSearching ? Icons.close : Icons.search, color: Colors.greenAccent),
-            onPressed: () {
-              setState(() {
-                _isSearching = !_isSearching;
-                if (!_isSearching) _searchController.clear();
-              });
-            },
+                IconButton(
+                  icon: Icon(_isSearching ? Icons.close : Icons.search, color: Colors.greenAccent),
+                  onPressed: () {
+                    setState(() {
+                      _isSearching = !_isSearching;
+                      if (!_isSearching) _searchController.clear();
+                    });
+                  },
+                ),
+              ],
+            ),
           ),
-          const SizedBox(width: 10),
-        ],
-      ),
-      backgroundColor: const Color(0xff161a25),
-      body: StreamBuilder<List<CandleModel>>(
-        stream: _streamService.chartStream,
-        builder: (context, snapshot) {
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: CircularProgressIndicator());
-          }
+        ),
+        const SizedBox(height: 10),
 
-          final candleHistory = snapshot.data!;
-          final lastCandle = candleHistory.last;
+        // STREAM DATA UTAMA
+        StreamBuilder<List<CandleModel>>(
+          stream: _streamService.chartStream,
+          builder: (context, snapshot) {
+            if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(40.0),
+                  child: CircularProgressIndicator(color: Color(0xff26a69a)),
+                ),
+              );
+            }
 
-          final analisa = _engine.checkStockSignal(
-            close: lastCandle.close,
-            ema5: lastCandle.close * 0.992,
-            ema20: lastCandle.close * 0.985,
-            ema200: lastCandle.close * 0.95, 
-            rsi: 45.0,
-            vwap: lastCandle.close * 0.99,
-            adx: 30.0,
-            atr: lastCandle.close * 0.02, 
-          );
+            final candleHistory = snapshot.data!;
+            final lastCandle = candleHistory.last;
 
-          return SingleChildScrollView(
-            child: Column(
+            // Panggil Otak C++ kamu
+            final analisa = _engine.checkStockSignal(
+              close: lastCandle.close,
+              ema5: lastCandle.close * 0.992,
+              ema20: lastCandle.close * 0.985,
+              ema200: lastCandle.close * 0.95, 
+              rsi: 45.0,
+              vwap: lastCandle.close * 0.99,
+              adx: 30.0,
+              atr: lastCandle.close * 0.02, 
+            );
+
+            return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                KeyedSubtree(
-                  key: UniqueKey(),
-                  child: CandlestickChart(candles: candleHistory),
+                // AREA GRAFIK
+                Container(
+                  height: 300, // Kita kunci tinggi areanya disini agar pas
+                  decoration: BoxDecoration(
+                    color: const Color(0xff1c2030),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: KeyedSubtree(
+                    key: UniqueKey(),
+                    child: CandlestickChart(candles: candleHistory),
+                  ),
                 ),
                 const SizedBox(height: 10),
+                
+                // PANEL HARGA RUNNING
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -473,64 +513,62 @@ class _LiveTradingScreenState extends State<LiveTradingScreen> {
                     ],
                   ),
                 ),
-                const Divider(color: Colors.grey, thickness: 0.5),
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Card(
-                    color: analisa.action == 1 
-                        ? const Color(0xff1b3a32) 
-                        : (analisa.action == -1 ? const Color(0xff3a1b1b) : const Color(0xff1f222e)),
-                    shape: RoundedRectangleBorder(
-                      side: BorderSide(
-                        color: analisa.action == 1 
-                            ? const Color(0xff26a69a) 
-                            : (analisa.action == -1 ? const Color(0xffef5350) : Colors.transparent), 
-                        width: 1.5
-                      ),
-                      borderRadius: BorderRadius.circular(12)
+                
+                // PANEL KOTAK SIGNAL C++ RADAR BANGLO
+                Card(
+                  color: analisa.action == 1 
+                      ? const Color(0xff1b3a32) 
+                      : (analisa.action == -1 ? const Color(0xff3a1b1b) : const Color(0xff1f222e)),
+                  shape: RoundedRectangleBorder(
+                    side: BorderSide(
+                      color: analisa.action == 1 
+                          ? const Color(0xff26a69a) 
+                          : (analisa.action == -1 ? const Color(0xffef5350) : Colors.transparent), 
+                      width: 1.5
                     ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(20.0),
-                      child: Column(
-                        children: [
-                          Text(
-                            analisa.action == 1 
-                                ? "🟢 AUTO SIGNAL: BUY" 
-                                : (analisa.action == -1 ? "🔴 AUTO SIGNAL: AVOID / SELL" : "⚪ AUTO SIGNAL: HOLD / WAIT"),
-                            style: const TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 8),
-                          Text("Skor Indikator Gabungan: ${analisa.score} / 100", style: const TextStyle(color: Colors.grey)),
-                          const Divider(height: 30, color: Colors.grey),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceAround,
-                            children: [
-                              Column(
-                                children: [
-                                  const Text("🛡️ AMANKAN STOP LOSS", style: TextStyle(color: Colors.redAccent, fontSize: 12)),
-                                  const SizedBox(height: 5),
-                                  Text(analisa.stopLoss > 0 ? "Rp${analisa.stopLoss.toStringAsFixed(0)}" : "-", style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                                ],
-                              ),
-                              Column(
-                                children: [
-                                  const Text("🎯 TARGET TAKE PROFIT", style: TextStyle(color: Colors.greenAccent, fontSize: 12)),
-                                  const SizedBox(height: 5),
-                                  Text(analisa.takeProfit > 0 ? "Rp${analisa.takeProfit.toStringAsFixed(0)}" : "-", style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                                ],
-                              ),
-                            ],
-                          )
-                        ],
-                      ),
+                    borderRadius: BorderRadius.circular(12)
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      children: [
+                        Text(
+                          analisa.action == 1 
+                              ? "🟢 AUTO SIGNAL: BUY" 
+                              : (analisa.action == -1 ? "🔴 AUTO SIGNAL: AVOID / SELL" : "⚪ AUTO SIGNAL: HOLD / WAIT"),
+                          style: const TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 8),
+                        Text("Skor Indikator Gabungan: ${analisa.score} / 100", style: const TextStyle(color: Colors.grey)),
+                        const Divider(height: 30, color: Colors.grey),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            Column(
+                              children: [
+                                const Text("🛡️ AMANKAN STOP LOSS", style: TextStyle(color: Colors.redAccent, fontSize: 12)),
+                                const SizedBox(height: 5),
+                                Text(analisa.stopLoss > 0 ? "Rp${analisa.stopLoss.toStringAsFixed(0)}" : "-", style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                            Column(
+                              children: [
+                                const Text("🎯 TARGET TAKE PROFIT", style: TextStyle(color: Colors.greenAccent, fontSize: 12)),
+                                const SizedBox(height: 5),
+                                Text(analisa.takeProfit > 0 ? "Rp${analisa.takeProfit.toStringAsFixed(0)}" : "-", style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                          ],
+                        )
+                      ],
                     ),
                   ),
                 ),
               ],
-            ),
-          );
-        },
-      ),
+            );
+          },
+        ),
+      ],
     );
   }
 }
