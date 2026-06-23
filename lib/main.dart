@@ -15,11 +15,126 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       theme: ThemeData.dark(),
       debugShowCheckedModeBanner: false,
-      home: const MainNavigationScreen(),
+      home: const SplashScreen(),
     );
   }
 }
 
+// =================================================================
+// WIDGET SPLASH SCREEN (PORTO HERU WINGCHUN)
+// =================================================================
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<Alignment> _alignmentAnimation;
+  bool _isAtCenter = false; 
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    );
+
+    _alignmentAnimation = Tween<Alignment>(
+      begin: const Alignment(2.2 , 3.2), 
+      end: const Alignment(0.1 , -0.1),
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Curves.fastOutSlowIn, 
+    ));
+
+    _controller.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        if (mounted) {
+          setState(() {
+            _isAtCenter = true;
+          });
+        }
+
+        Future.delayed(const Duration(milliseconds: 1500), () {
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const MainNavigationScreen()), 
+            );
+          }
+        });
+      }
+    });
+
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF7F00FF), 
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF7F00FF),
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        title: const Text(
+          'PORTO HERU WINGCHUN',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w500, fontSize: 20),
+        ),
+      ),
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: Image.asset(
+              'assets/images/splash.png', 
+              fit: BoxFit.cover,       
+            ),
+          ),
+          AnimatedBuilder(
+            animation: _alignmentAnimation,
+            builder: (context, child) {
+              return Align(
+                alignment: _alignmentAnimation.value,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300), 
+                  transitionBuilder: (Widget child, Animation<double> animation) {
+                    return ScaleTransition(scale: animation, child: child);
+                  },
+                  child: _isAtCenter
+                      ? const Text(
+                          '👆',
+                          key: ValueKey('finger_icon'),
+                          style: TextStyle(fontSize: 60), 
+                        )
+                      : const Text(
+                          '🛠️',
+                          key: ValueKey('tools_icon'),
+                          style: TextStyle(fontSize: 65), 
+                        ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// =================================================================
+// NAVIGASI UTAMA (DASHBOARD)
+// =================================================================
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
 
@@ -55,7 +170,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             label: 'Live Chart',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.filter_list), // Fix: Mengganti ikon typo kemarin agar sukses compile
+            icon: Icon(Icons.filter_list),
             label: 'Top Filtered',
           ),
         ],
@@ -65,7 +180,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // =================================================================
-// CARA NYARI DI HALAMAN 1: KETIK KODE -> ENTER -> GRAFIK BERUBAH
+// HALAMAN LIVE CHART & PROSES ANALISA ENGINE
 // =================================================================
 class LiveTradingScreen extends StatefulWidget {
   const LiveTradingScreen({super.key});
@@ -149,6 +264,7 @@ class _LiveTradingScreenState extends State<LiveTradingScreen> {
           final candleHistory = snapshot.data!;
           final lastCandle = candleHistory.last;
 
+          // Panggil fungsi bridge bersih kamu yang mengarah ke evaluate_stock_signal C++
           final analisa = _engine.checkStockSignal(
             close: lastCandle.close,
             ema5: lastCandle.close * 0.992,
@@ -190,9 +306,17 @@ class _LiveTradingScreenState extends State<LiveTradingScreen> {
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Card(
-                    color: analisa.action == 1 ? const Color(0xff1b3a32) : const Color(0xff1f222e),
+                    // Warna dinamis: Hijau (Buy/1), Merah (Avoid/-1), Abu (Hold/0)
+                    color: analisa.action == 1 
+                        ? const Color(0xff1b3a32) 
+                        : (analisa.action == -1 ? const Color(0xff3a1b1b) : const Color(0xff1f222e)),
                     shape: RoundedRectangleBorder(
-                      side: BorderSide(color: analisa.action == 1 ? const Color(0xff26a69a) : Colors.transparent, width: 1.5),
+                      side: BorderSide(
+                        color: analisa.action == 1 
+                            ? const Color(0xff26a69a) 
+                            : (analisa.action == -1 ? const Color(0xffef5350) : Colors.transparent), 
+                        width: 1.5
+                      ),
                       borderRadius: BorderRadius.circular(12)
                     ),
                     child: Padding(
@@ -200,8 +324,10 @@ class _LiveTradingScreenState extends State<LiveTradingScreen> {
                       child: Column(
                         children: [
                           Text(
-                            analisa.action == 1 ? "🟢 AUTO SIGNAL: BUY" : "⚪ AUTO SIGNAL: HOLD / WAIT",
-                            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                            analisa.action == 1 
+                                ? "🟢 AUTO SIGNAL: BUY" 
+                                : (analisa.action == -1 ? "🔴 AUTO SIGNAL: AVOID / SELL" : "⚪ AUTO SIGNAL: HOLD / WAIT"),
+                            style: const TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 8),
                           Text("Skor Indikator Gabungan: ${analisa.score} / 100", style: const TextStyle(color: Colors.grey)),
@@ -240,7 +366,7 @@ class _LiveTradingScreenState extends State<LiveTradingScreen> {
 }
 
 // =================================================================
-// CARA NYARI DI HALAMAN 2: REAL-TIME FILTER LIST DATA
+// RADAR SCREENER DATA SAHAM
 // =================================================================
 class ScreenedStockModel {
   final int rank;
@@ -270,7 +396,6 @@ class StockScreenerScreen extends StatefulWidget {
 }
 
 class _StockScreenerScreenState extends State<StockScreenerScreen> {
-  // Master Data Saham
   final List<ScreenedStockModel> _allStocks = [
     ScreenedStockModel(rank: 1, ticker: 'BCIP', name: 'Bumi Citra Permai Tbk', price: 84, changePercent: 14.2, score: 95, strategyTag: 'Fast Trade / Scalping'),
     ScreenedStockModel(rank: 2, ticker: 'BRIS', name: 'Bank Syariah Indonesia Tbk', price: 2540, changePercent: 6.8, score: 89, strategyTag: 'Volume Spike Breakout'),
@@ -279,17 +404,15 @@ class _StockScreenerScreenState extends State<StockScreenerScreen> {
     ScreenedStockModel(rank: 5, ticker: 'TLKM', name: 'Telkom Indonesia Tbk', price: 3640, changePercent: -0.5, score: 65, strategyTag: 'Sideways Testing Support'),
   ];
 
-  // Data yang berhasil lolos ketikan pencarian user
   List<ScreenedStockModel> _filteredStocks = [];
   final TextEditingController _screenerSearchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _filteredStocks = _allStocks; // Awalnya munculkan semua
+    _filteredStocks = _allStocks; 
   }
 
-  // Fungsi menyaring list saat user ngetik keyword saham
   void _runFilter(String keyword) {
     List<ScreenedStockModel> results = [];
     if (keyword.isEmpty) {
@@ -320,10 +443,9 @@ class _StockScreenerScreenState extends State<StockScreenerScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // KOTAK PENCARIAN LIVE DI HALAMAN 2
             TextField(
               controller: _screenerSearchController,
-              onChanged: _runFilter, // Setiap ketikan langsung menyaring otomatis!
+              onChanged: _runFilter, 
               decoration: InputDecoration(
                 labelText: 'Cari hasil filteran harian...',
                 suffixIcon: const Icon(Icons.search, color: Colors.greenAccent),
@@ -372,12 +494,10 @@ class _StockScreenerScreenState extends State<StockScreenerScreen> {
                                 )
                               ],
                             ),
-                            
-subtitle: Padding(
-  padding: const EdgeInsets.only(top: 4.0), // FIX: Menggunakan EdgeInsets.only
-  child: Text(stock.name, style: const TextStyle(color: Colors.grey, fontSize: 12), overflow: TextOverflow.ellipsis),
-),
-
+                            subtitle: Padding(
+                              padding: const EdgeInsets.only(top: 4.0), 
+                              child: Text(stock.name, style: const TextStyle(color: Colors.grey, fontSize: 12), overflow: TextOverflow.ellipsis),
+                            ),
                             trailing: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               crossAxisAlignment: CrossAxisAlignment.end,
