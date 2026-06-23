@@ -562,7 +562,7 @@ class _LiveTradingViewState extends State<LiveTradingView> {
 }
 
 // =================================================================
-// 📱 3. SEKAT LUAR: FITUR AUTOMATIC STOCK SCREENER CO-PILOT
+// 📱 3. FITUR AUTOMATIC STOCK SCREENER CO-PILOT (HANYA SATU SAJA)
 // =================================================================
 class ScreenedStockModel {
   final int rank;
@@ -592,12 +592,83 @@ class StockScreenerScreen extends StatefulWidget {
 }
 
 class _StockScreenerScreenState extends State<StockScreenerScreen> {
-  // Data screener manual/otomatis Stockbit bursa kamumu aman di bawah sini...
+  final TextEditingController _searchController = TextEditingController();
+  String _searchKeyword = "";
+
+  // Contoh data screener kamu
+  final List<ScreenedStockModel> _allStocks = [
+    ScreenedStockModel(rank: 1, ticker: 'BCIP', name: 'Bumi Citra Permai Tbk', price: 84, changePercent: 14.2, score: 95, strategyTag: 'Fast Trade / Scalping'),
+    ScreenedStockModel(rank: 2, ticker: 'BRIS', name: 'Bank Syariah Indonesia Tbk', price: 2540, changePercent: 6.8, score: 89, strategyTag: 'Volume Spike Breakout'),
+  ];
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Container(); // Isi widget sesuai screener punyamu Bossku
+    // Jalankan filter pencarian dengan tipe data yang dipertegas (ScreenedStockModel)
+    final filteredStocks = _allStocks.where((ScreenedStockModel stock) {
+      final keyword = _searchKeyword.toLowerCase();
+      return stock.ticker.toLowerCase().contains(keyword) || 
+             stock.name.toLowerCase().contains(keyword);
+    }).toList();
+
+    return Scaffold(
+      backgroundColor: const Color(0xff131722),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            // Input search screener
+            TextField(
+              controller: _searchController,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: "Cari hasil screening...",
+                hintStyle: const TextStyle(color: Colors.white24),
+                prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                filled: true,
+                fillColor: const Color(0xff1c2030),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              onChanged: (value) {
+                setState(() {
+                  _searchKeyword = value;
+                });
+              },
+            ),
+            const SizedBox(height: 10),
+            
+            // List Hasil Screened
+            Expanded(
+              child: ListView.builder(
+                itemCount: filteredStocks.length,
+                itemBuilder: (context, index) {
+                  final stock = filteredStocks[index];
+                  return Card(
+                    color: const Color(0xff1c2030),
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: const Color(0xff26a69a),
+                        child: Text("${stock.rank}", style: const TextStyle(color: Colors.white)),
+                      ),
+                      title: Text("${stock.ticker} (${stock.price})", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      subtitle: Text(stock.name, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                      trailing: Text("${stock.changePercent}%", style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
-}
+} // 🔑 FILE UTAMAMU BERAKHIR DI SINI! JANGAN ADA KODE APAPUN LAGI DI BAWAH INI.
 // =================================================================
 // RADAR SCREENER DATA SAHAM
 // =================================================================
