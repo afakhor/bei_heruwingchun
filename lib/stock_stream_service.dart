@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-// 📊 MODEL CANDLE (Tetap dipertahankan supaya tidak eror saat compile)
+// 📊 MODEL CANDLE UTAMA (Wajib ada di sini agar main.dart & chart tidak eror)
 class CandleModel {
   final DateTime timestamp;
   final DateTime date;
@@ -29,25 +29,28 @@ class StockStreamService {
 
   Stream<List<CandleModel>> get chartStream => _chartStreamController.stream;
 
-  // 🚀 FUNGSI AMBIL DATA GRAFIK DARI OHLC.DEV
-  void startStreaming(String ticker, String apiKey) async {
-    // Jalur endpoint OHLC.dev untuk saham IDX
-    final url = Uri.parse(
-      'https://api.ohlc.dev/v1/idx/stocks/${ticker.toUpperCase()}/candles?api_key=$apiKey'
-    );
+  // 🚀 FUNGSI SUDAH DIUPGRADE: Menerima baseUrl dinamis dari inputan UI HP kamu
+  void startStreaming(String ticker, String apiKey, String baseUrl) async {
+    
+    // Bersihkan spasi. Jika inputan di HP kosong, otomatis pakai default ohlc.dev
+    String cleanUrl = baseUrl.trim();
+    if (cleanUrl.isEmpty) {
+      cleanUrl = 'https://api.ohlc.dev/v1/idx/stocks';
+    }
+    
+    // Jalur endpoint gabungan dari inputan situs di layar HP kamu
+    final url = Uri.parse('$cleanUrl/${ticker.toUpperCase()}/candles?api_key=$apiKey');
 
     try {
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
         final List<dynamic> dataHasil = jsonDecode(response.body);
-        
         List<CandleModel> loadedCandles = [];
 
         for (var item in dataHasil) {
-          // Menyesuaikan dengan response key dari ohlc.dev (biasanya berupa 'time' atau 'date')
           DateTime parsedDate = DateTime.parse(item['date'] ?? item['time'] ?? DateTime.now().toString());
-          
+
           loadedCandles.add(CandleModel(
             timestamp: parsedDate,
             date: parsedDate,
@@ -59,22 +62,25 @@ class StockStreamService {
           ));
         }
 
-        // Pastikan urutan data sesuai untuk grafik dari kiri ke kanan
         if (!_chartStreamController.isClosed) {
           _chartStreamController.add(loadedCandles);
         }
       } else {
-        _chartStreamController.addError("Gagal memuat data OHLC.dev: ${response.statusCode}");
+        _chartStreamController.addError("Gagal memuat data. Status: ${response.statusCode}");
       }
     } catch (e) {
-      _chartStreamController.addError("Eror koneksi ke OHLC.dev: $e");
+      _chartStreamController.addError("Eror koneksi ke server: $e");
     }
   }
 
-  // 🏢 FUNGSI TAMBAHAN: MENGAMBIL DATA SEKTOR SAHAM
-  static Future<Map<String, dynamic>> fetchStockSector(String ticker, String apiKey) async {
-    final url = Uri.parse('https://api.ohlc.dev/v1/idx/stocks/${ticker.toUpperCase()}?api_key=$apiKey');
-    
+  // 🏢 FUNGSI AMBIL DATA SEKTOR (Juga mendukung URL dinamis)
+  static Future<Map<String, dynamic>> fetchStockSector(String ticker, String apiKey, String baseUrl) async {
+    String cleanUrl = baseUrl.trim();
+    if (cleanUrl.isEmpty) {
+      cleanUrl = 'https://api.ohlc.dev/v1/idx/stocks';
+    }
+    final url = Uri.parse('$cleanUrl/${ticker.toUpperCase()}?api_key=$apiKey');
+
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
