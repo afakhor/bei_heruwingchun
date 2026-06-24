@@ -2,10 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-// 📊 MODEL CANDLE UTAMA (Disamakan dengan kebutuhan candlestick_chart.dart)
+// 📊 MODEL CANDLE (Tetap dipertahankan supaya tidak eror saat compile)
 class CandleModel {
-  final DateTime timestamp; // Sesuai kebutuhan stream lama
-  final DateTime date;      // Sesuai kebutuhan GoAPI
+  final DateTime timestamp;
+  final DateTime date;
   final double open;
   final double high;
   final double low;
@@ -23,61 +23,72 @@ class CandleModel {
   });
 }
 
-// 🛡️ ALIAS PELINDUNG: Jika ada file lain nyari CandleData, otomatis diarahkan ke CandleModel
-typedef CandleData = CandleModel;
-
 class StockStreamService {
-  // Menggunakan CandleModel sesuai kemauan main.dart baris 450
   final StreamController<List<CandleModel>> _chartStreamController = 
       StreamController<List<CandleModel>>.broadcast();
 
   Stream<List<CandleModel>> get chartStream => _chartStreamController.stream;
 
+  // 🚀 FUNGSI AMBIL DATA GRAFIK DARI OHLC.DEV
   void startStreaming(String ticker, String apiKey) async {
+    // Jalur endpoint OHLC.dev untuk saham IDX
     final url = Uri.parse(
-      'https://api.goapi.id/v1/stock/idx/${ticker.toUpperCase()}/historical?api_key=$apiKey'
+      'https://api.ohlc.dev/v1/idx/stocks/${ticker.toUpperCase()}/candles?api_key=$apiKey'
     );
 
     try {
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
-        final jsonMap = jsonDecode(response.body);
+        final List<dynamic> dataHasil = jsonDecode(response.body);
+        
+        List<CandleModel> loadedCandles = [];
 
-        if (jsonMap['status'] == 'success' && jsonMap['data'] != null) {
-          final List<dynamic> dataHasil = jsonMap['data']['results'] ?? [];
+        for (var item in dataHasil) {
+          // Menyesuaikan dengan response key dari ohlc.dev (biasanya berupa 'time' atau 'date')
+          DateTime parsedDate = DateTime.parse(item['date'] ?? item['time'] ?? DateTime.now().toString());
           
-          List<CandleModel> loadedCandles = [];
+          loadedCandles.add(CandleModel(
+            timestamp: parsedDate,
+            date: parsedDate,
+            open: (item['open'] as num).toDouble(),
+            high: (item['high'] as num).toDouble(),
+            low: (item['low'] as num).toDouble(),
+            close: (item['close'] as num).toDouble(),
+            volume: (item['volume'] as num).toDouble(),
+          ));
+        }
 
-          for (var item in dataHasil) {
-            DateTime parsedDate = DateTime.parse(item['date'] ?? DateTime.now().toString());
-            
-            loadedCandles.add(CandleModel(
-              timestamp: parsedDate,
-              date: parsedDate,
-              open: (item['open'] as num).toDouble(),
-              high: (item['high'] as num).toDouble(),
-              low: (item['low'] as num).toDouble(),
-              close: (item['close'] as num).toDouble(),
-              volume: (item['volume'] as num).toDouble(),
-            ));
-          }
-
-          // Urutkan data dari kiri ke kanan untuk grafik
-          loadedCandles = loadedCandles.reversed.toList();
-
-          if (!_chartStreamController.isClosed) {
-            _chartStreamController.add(loadedCandles);
-          }
-        } else {
-          _chartStreamController.addError(jsonMap['message'] ?? "Gagal memuat data dari GoAPI.");
+        // Pastikan urutan data sesuai untuk grafik dari kiri ke kanan
+        if (!_chartStreamController.isClosed) {
+          _chartStreamController.add(loadedCandles);
         }
       } else {
-        _chartStreamController.addError("Server GoAPI merespon error: ${response.statusCode}");
+        _chartStreamController.addError("Gagal memuat data OHLC.dev: ${response.statusCode}");
       }
     } catch (e) {
-      _chartStreamController.addError("Gagal terhubung ke GoAPI: $e");
+      _chartStreamController.addError("Eror koneksi ke OHLC.dev: $e");
     }
+  }
+
+  // 🏢 FUNGSI TAMBAHAN: MENGAMBIL DATA SEKTOR SAHAM
+  static Future<Map<String, dynamic>> fetchStockSector(String ticker, String apiKey) async {
+    final url = Uri.parse('https://api.ohlc.dev/v1/idx/stocks/${ticker.toUpperCase()}?api_key=$apiKey');
+    
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return {
+          'sector': data['sector'] ?? 'Tidak Diketahui',
+          'industry': data['industry'] ?? 'Tidak Diketahui',
+          'name': data['name'] ?? 'Nama Perusahaan',
+        };
+      }
+    } catch (e) {
+      print("Gagal ambil data sektor: $e");
+    }
+    return {'sector': '-', 'industry': '-', 'name': '-'};
   }
 
   void dispose() {
