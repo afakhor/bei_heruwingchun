@@ -224,18 +224,18 @@ class MainNavigationScreen extends StatefulWidget {
 }
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
-  // 🌐 SPOT 1: Controller untuk menangkap alamat situs HTTP secara dinamis
+  // 🌐 SEKARANG DEFAULT-NYA LANGSUNG MENGARAH KE PIPA PYTHON DI RENDER
   final TextEditingController _urlInputController = 
-      TextEditingController(text: 'https://api.ohlc.dev/v1/idx/stocks');
+      TextEditingController(text: 'https://sumur-abadi-api.onrender.com/v1/idx');
   final TextEditingController _apiInputController = TextEditingController();
-  
+
   String _urlAktif = "";
   String _apiKeyAktif = "";
   bool _isEngineRunning = false;
 
   @override
   void dispose() {
-    _urlInputController.dispose(); // Amankan memori HP
+    _urlInputController.dispose(); 
     _apiInputController.dispose();
     super.dispose();
   }
@@ -254,7 +254,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // 📥 KOTAK FORM INPUTAN YANG NEMPEL DI HALAMAN UTAMA
               Card(
                 color: const Color(0xff1c2030),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -270,12 +269,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                       ),
                       const SizedBox(height: 12),
 
-                      // 🌐 SPOT 3A: Pasang Kotak Input Alamat Situs HTTP di sini
                       TextField(
                         controller: _urlInputController,
                         style: const TextStyle(color: Colors.white, fontSize: 14),
                         decoration: InputDecoration(
-                          hintText: "Masukkan Base URL API (e.g. ohlc.dev)...",
+                          hintText: "Masukkan Base URL API...",
                           hintStyle: const TextStyle(color: Colors.white24),
                           prefixIcon: const Icon(Icons.language, color: Colors.grey, size: 20),
                           filled: true,
@@ -293,7 +291,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                       ),
                       const SizedBox(height: 10),
 
-                      // Kotak Input API Key + Tombol Aktifkan
                       Row(
                         children: [
                           Expanded(
@@ -301,7 +298,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                               controller: _apiInputController,
                               style: const TextStyle(color: Colors.white, fontSize: 14),
                               decoration: InputDecoration(
-                                hintText: "Paste API Key / Token...",
+                                hintText: "Paste API Key (Boleh Kosong)...",
                                 hintStyle: const TextStyle(color: Colors.white24),
                                 prefixIcon: const Icon(Icons.vpn_key, color: Colors.grey, size: 20),
                                 filled: true,
@@ -328,17 +325,15 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                             onPressed: () {
                               String inputKey = _apiInputController.text.trim();
                               String inputUrl = _urlInputController.text.trim();
-                              
+
+                              // 💡 JIKA KOSONG, OTOMATIS JADI '1' AGAR LULUS VALIDASI INTERNAl
                               if (inputKey.isEmpty) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text("API Key kosong, Bossku!")),
-                                );
-                                return;
+                                inputKey = "1";
                               }
 
                               setState(() {
                                 _apiKeyAktif = inputKey;
-                                _urlAktif = inputUrl; // Ambil data URL dinamis
+                                _urlAktif = inputUrl; 
                                 _isEngineRunning = true;
                               });
                             },
@@ -352,9 +347,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               ),
               const SizedBox(height: 20),
 
-              // 📊 JALANKAN ENGINE GRAFIK SEBENARNYA DENGAN URL DINAMIS
               _isEngineRunning
-                  ? LiveTradingView(apiKey: _apiKeyAktif, baseUrl: _urlAktif) // 👈 Kirim URL ke mesin bawah
+                  ? LiveTradingView(apiKey: _apiKeyAktif, baseUrl: _urlAktif) 
                   : Container(
                       height: 200,
                       decoration: BoxDecoration(
