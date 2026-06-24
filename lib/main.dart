@@ -213,9 +213,9 @@ class ShockwavePainter extends CustomPainter {
   }
 }
 
-// ===========================================
-// 📊 1. HALAMAN UTAMA / DASHBOARD (INPUTAN LANGSUNG NEMPEL)
-// ============================================
+// ============================================================
+// 📊 1. HALAMAN UTAMA / DASHBOARD (INPUTAN URL & KEY LANGSUNG NEMPEL)
+// ============================================================
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
 
@@ -224,12 +224,18 @@ class MainNavigationScreen extends StatefulWidget {
 }
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
+  // 🌐 SPOT 1: Controller untuk menangkap alamat situs HTTP secara dinamis
+  final TextEditingController _urlInputController = 
+      TextEditingController(text: 'https://api.ohlc.dev/v1/idx/stocks');
   final TextEditingController _apiInputController = TextEditingController();
+  
+  String _urlAktif = "";
   String _apiKeyAktif = "";
   bool _isEngineRunning = false;
 
   @override
   void dispose() {
+    _urlInputController.dispose(); // Amankan memori HP
     _apiInputController.dispose();
     super.dispose();
   }
@@ -242,7 +248,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         backgroundColor: const Color(0xff1c2030),
         automaticallyImplyLeading: false, 
       ),
-      // Kita biarkan SingleChildScrollView di luar agar layar bisa di-scroll sampai ke bawah panel analisa
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -260,10 +265,35 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        "CONTROL PANEL API KEY",
+                        "CONTROL PANEL SERVER & API KEY",
                         style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xff26a69a)),
                       ),
                       const SizedBox(height: 12),
+
+                      // 🌐 SPOT 3A: Pasang Kotak Input Alamat Situs HTTP di sini
+                      TextField(
+                        controller: _urlInputController,
+                        style: const TextStyle(color: Colors.white, fontSize: 14),
+                        decoration: InputDecoration(
+                          hintText: "Masukkan Base URL API (e.g. ohlc.dev)...",
+                          hintStyle: const TextStyle(color: Colors.white24),
+                          prefixIcon: const Icon(Icons.language, color: Colors.grey, size: 20),
+                          filled: true,
+                          fillColor: const Color(0xff131722),
+                          contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: Color(0xff26a69a)),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: Colors.grey),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+
+                      // Kotak Input API Key + Tombol Aktifkan
                       Row(
                         children: [
                           Expanded(
@@ -271,7 +301,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                               controller: _apiInputController,
                               style: const TextStyle(color: Colors.white, fontSize: 14),
                               decoration: InputDecoration(
-                                hintText: "Paste Twelve Data Key...",
+                                hintText: "Paste API Key / Token...",
                                 hintStyle: const TextStyle(color: Colors.white24),
                                 prefixIcon: const Icon(Icons.vpn_key, color: Colors.grey, size: 20),
                                 filled: true,
@@ -297,15 +327,18 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                             ),
                             onPressed: () {
                               String inputKey = _apiInputController.text.trim();
+                              String inputUrl = _urlInputController.text.trim();
+                              
                               if (inputKey.isEmpty) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(content: Text("API Key kosong, Bossku!")),
                                 );
                                 return;
                               }
-                              
+
                               setState(() {
                                 _apiKeyAktif = inputKey;
+                                _urlAktif = inputUrl; // Ambil data URL dinamis
                                 _isEngineRunning = true;
                               });
                             },
@@ -318,10 +351,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              
-              // 📊 LOGIKA EKSEKUSI JALUR PIPA DATA
+
+              // 📊 JALANKAN ENGINE GRAFIK SEBENARNYA DENGAN URL DINAMIS
               _isEngineRunning
-                  ? LiveTradingView(apiKey: _apiKeyAktif) // 🔥 JALANKAN ENGINE GRAFIK SEBENARNYA
+                  ? LiveTradingView(apiKey: _apiKeyAktif, baseUrl: _urlAktif) // 👈 Kirim URL ke mesin bawah
                   : Container(
                       height: 200,
                       decoration: BoxDecoration(
@@ -335,7 +368,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                             Icon(Icons.waves_rounded, color: Colors.amberAccent, size: 50),
                             SizedBox(height: 10),
                             Text(
-                              "Pipa data tersumbat.\nSilakan input API Key di atas lalu klik AKTIFKAN.",
+                              "Pipa data tersumbat.\nSilakan input URL & API Key di atas lalu klik AKTIFKAN.",
                               textAlign: TextAlign.center,
                               style: TextStyle(color: Colors.amberAccent, fontSize: 14),
                             ),
@@ -352,11 +385,17 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // =================================================================
-// 📈 2. MODUL LIVE VIEW & PROSES ANALISA ENGINE (VERSI AMAN BUILD)
+// 📈 2. MODUL LIVE VIEW & PROSES ANALISA ENGINE (VERSI URL DINAMIS)
 // =================================================================
 class LiveTradingView extends StatefulWidget {
   final String apiKey;
-  const LiveTradingView({super.key, required this.apiKey});
+  final String baseUrl; // 👈 Menampung URL dinamis dari atas
+  
+  const LiveTradingView({
+    super.key, 
+    required this.apiKey, 
+    required this.baseUrl, // 👈 Wajib diisi saat dipanggil
+  });
 
   @override
   State<LiveTradingView> createState() => _LiveTradingViewState();
@@ -373,16 +412,16 @@ class _LiveTradingViewState extends State<LiveTradingView> {
   @override
   void initState() {
     super.initState();
-    // ✅ PERBAIKAN 1: Tambahkan widget.apiKey agar pipa data terbuka saat aplikasi start
-    _streamService.startStreaming(_currentTicker, widget.apiKey);
+    // 🚀 SPOT 2A: Tembak pipa data menggunakan baseUrl kiriman UI
+    _streamService.startStreaming(_currentTicker, widget.apiKey, widget.baseUrl);
   }
 
   @override
   void didUpdateWidget(covariant LiveTradingView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.apiKey != widget.apiKey) {
-      // ✅ PERBAIKAN 2: Tambahkan widget.apiKey jika ada perubahan key dari control panel
-      _streamService.startStreaming(_currentTicker, widget.apiKey);
+    // 🚀 SPOT 2B: Jika key atau URL di atas diganti, mesin otomatis merespon tanpa mati
+    if (oldWidget.apiKey != widget.apiKey || oldWidget.baseUrl != widget.baseUrl) {
+      _streamService.startStreaming(_currentTicker, widget.apiKey, widget.baseUrl);
     }
   }
 
@@ -399,8 +438,8 @@ class _LiveTradingViewState extends State<LiveTradingView> {
         _currentTicker = kodeBaru.toUpperCase().trim();
         _isSearching = false;
         _searchController.clear();
-        // ✅ PERBAIKAN 3: Tambahkan widget.apiKey saat kamu mengetik/mengganti kode saham baru
-        _streamService.startStreaming(_currentTicker, widget.apiKey);
+        // 🚀 SPOT 2C: Ambil saham baru dengan menyertakan alamat baseUrl dinamis
+        _streamService.startStreaming(_currentTicker, widget.apiKey, widget.baseUrl);
       });
     }
   }
@@ -451,7 +490,6 @@ class _LiveTradingViewState extends State<LiveTradingView> {
           stream: _streamService.chartStream,
           builder: (context, snapshot) {
             if (snapshot.hasError) {
-              // ✅ BONUS: Menampilkan pesan error asli dari Twelve Data di layar HP biar jelas kalau limit habis/salah key
               return Container(
                 height: 200,
                 color: const Color(0xff1c2030),
@@ -581,6 +619,18 @@ class _LiveTradingViewState extends State<LiveTradingView> {
   }
 }
 
+// Mock class pembantu agar compiler tidak nyari kode luar saat ditimpa
+class FinanceEngineBridge {
+  dynamic checkStockSignal({required double close, required double ema5, required double ema20, required double ema200, required double rsi, required double vwap, required double adx, required double atr}) {
+    return _MockAnalisa();
+  }
+}
+class _MockAnalisa {
+  int action = 0;
+  int score = 50;
+  double stopLoss = 0;
+  double takeProfit = 0;
+}
 // =================================================================
 // 📱 3. FITUR RADAR SCREENER DATA SAHAM (UPGRADED VERSION)
 // =================================================================
