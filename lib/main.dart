@@ -559,6 +559,28 @@ class _MockAnalisa { int action = 1; int score = 95; }
 // ====================================================================
 // 📊 HALAMAN 2: STOCK SCREENER DENGAN FILTER (TERKONEKSI PIPA REAL-TIME)
 // ====================================================================
+
+class ScreenerStockModel {
+  final String ticker;
+  final double basePrice;
+  final double baseChange;
+
+  ScreenerStockModel({
+    required this.ticker,
+    required this.basePrice,
+    required this.baseChange,
+  });
+
+  // Factory constructor untuk mengubah data dummy JSON menjadi objek Dart
+  factory ScreenerStockModel.fromJson(Map<String, dynamic> json) {
+    return ScreenerStockModel(
+      ticker: json['ticker'] ?? '',
+      basePrice: (json['basePrice'] ?? 0).toDouble(),
+      baseChange: (json['baseChange'] ?? 0).toDouble(),
+    );
+  }
+}
+
 class StockScreenerScreen extends StatefulWidget {
   final Function(String) onStockSelected;
   final StockStreamService streamService;
