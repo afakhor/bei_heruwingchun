@@ -60,6 +60,9 @@ def get_market_screener():
                 "volume": volume
             })
             
+        # 🔥 TAMBAHKAN BARIS INI: Urutkan dari persentase kenaikan tertinggi ke terendah
+        screener_list = sorted(screener_list, key=lambda x: x['change_percent'], reverse=True)
+            
         return jsonify(screener_list)
         
     except Exception as e:
