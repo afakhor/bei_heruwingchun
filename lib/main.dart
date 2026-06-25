@@ -852,7 +852,7 @@ class MarketRadarScreen extends StatelessWidget {
             Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
             if (isEngineRunning && name == activeTicker)
               const Padding(
-                padding: EdgeInsets.left(6.0),
+                padding: EdgeInsets.only(left: 6.0),
                 child: Icon(Icons.sensors, color: Colors.greenAccent, size: 12),
               ),
           ],
