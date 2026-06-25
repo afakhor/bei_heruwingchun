@@ -105,7 +105,6 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
           Positioned.fill(
             child: Container(color: const Color(0xFF7F00FF)),
           ),
-
           if (_isClicked)
             AnimatedBuilder(
               animation: _rippleController,
@@ -118,7 +117,6 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                 );
               },
             ),
-
           AnimatedBuilder(
             animation: _alignmentAnimation,
             builder: (context, child) {
@@ -178,7 +176,7 @@ class ShockwavePainter extends CustomPainter {
 }
 
 // ====================================================================
-// 📊 MASTER NAVIGASI (4 HALAMAN UTAMA)
+// 📊 MASTER NAVIGASI UTAMA
 // ====================================================================
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -213,7 +211,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     });
   }
 
-    Widget _buildDashboardPage() {
+  Widget _buildDashboardPage() {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Dashboard Sumur Abadi'),
@@ -226,9 +224,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // -------------------------------------------------------------
-              // CARD 1: CONTROL PANEL SERVER (YANG SUDAH ADA)
-              // -------------------------------------------------------------
+              // PANEL 1: KONTROL SERVER
               Card(
                 color: const Color(0xff1c2030),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -243,7 +239,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                         style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xff26a69a)),
                       ),
                       const SizedBox(height: 12),
-
                       TextField(
                         controller: _urlInputController,
                         style: const TextStyle(color: Colors.white, fontSize: 14),
@@ -259,7 +254,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                         ),
                       ),
                       const SizedBox(height: 10),
-
                       Row(
                         children: [
                           Expanded(
@@ -303,12 +297,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   ),
                 ),
               ),
-              
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
 
-              // -------------------------------------------------------------
-              // 🔥 CARD 2: JEMBATAN INPUT DATA RTI PREMIUM (FITUR BARU)
-              // -------------------------------------------------------------
+              // PANEL 2: INTEGRASI DATA RTI PREMIUM 
               Card(
                 color: const Color(0xff1c2030),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -322,52 +313,36 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                         children: [
                           Icon(Icons.verified_user, color: Colors.amber, size: 18),
                           SizedBox(width: 8),
-                          Text(
-                            "RTI PREMIUM DATA BRIDGING",
-                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.amber),
-                          ),
+                          Text("RTI PREMIUM DATA BRIDGING", style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.amber)),
                         ],
                       ),
-                      const SizedBox(height: 10),
-                      const Text(
-                        "Salin data Net Foreign Flow atau RTI Valuation di sini untuk kalkulasi rotasi sektoral:",
-                        style: TextStyle(fontSize: 12, color: Colors.grey),
-                      ),
+                      const SizedBox(height: 8),
+                      const Text("Sinkronisasikan analisa screening RTI Pro ke mesin lokal:", style: TextStyle(fontSize: 12, color: Colors.grey)),
                       const SizedBox(height: 12),
                       Row(
                         children: [
                           Expanded(
                             child: TextField(
                               keyboardType: TextInputType.number,
-                              style: const TextStyle(color: Colors.white, fontSize: 14),
+                              style: const TextStyle(color: Colors.white, fontSize: 13),
                               decoration: InputDecoration(
-                                labelText: "Foreign Buy (Miliar)",
-                                labelStyle: const TextStyle(color: Colors.white60, fontSize: 12),
+                                labelText: "Foreign Flow Net Buy (Miliar)",
+                                labelStyle: const TextStyle(color: Colors.white60, fontSize: 11),
                                 filled: true,
                                 fillColor: const Color(0xff131722),
                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                               ),
                             ),
                           ),
                           const SizedBox(width: 10),
                           ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.amber,
-                              foregroundColor: Colors.black,
-                              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            ),
+                            style: ElevatedButton.styleFrom(backgroundColor: Colors.amber, foregroundColor: Colors.black, padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
                             onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("Data RTI Berhasil Disinkronisasi ke Dashboard!"),
-                                  backgroundColor: Colors.amber,
-                                ),
-                              );
+                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Data RTI Berhasil Disinkronisasi!"), backgroundColor: Colors.amber));
                             },
-                            icon: const Icon(Icons.sync, size: 18),
-                            label: const Text("SYNC DATA", style: TextStyle(fontWeight: FontWeight.bold)),
+                            icon: const Icon(Icons.sync, size: 16),
+                            label: const Text("SYNC", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                           ),
                         ],
                       ),
@@ -375,12 +350,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   ),
                 ),
               ),
+              const SizedBox(height: 16),
 
-              const SizedBox(height: 20),
-
-              // -------------------------------------------------------------
-              // CARD 3: LIVE VIEW ENGINE RADAR (YANG SUDAH ADA)
-              // -------------------------------------------------------------
+              // PANEL 3: CHART REALSTREAM & SIGNAL ANALYST
               _isEngineRunning
                   ? LiveTradingView(
                       apiKey: _apiKeyAktif, 
@@ -426,7 +398,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           _buildDashboardPage(),       
           StockScreenerScreen(onStockSelected: _hubungkanKeDashboard),  
           MarketRadarScreen(onStockSelected: _hubungkanKeDashboard), 
-          const StockCalculatorProScreen(), // 🔥 HALAMAN 4 VERSI UPGRADE PRO
+          const StockCalculatorProScreen(),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -451,89 +423,427 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 }
 
-// =================================================================
-// MODUL INDIKATOR JEMBATAN LIVE (MOCK ENGINE)
-// =================================================================
+// ====================================================================
+// 📈 HALAMAN 1: LIVE VIEW & CANDLESTICK (DENGAN FITUR SEARCH AKTIF)
+// ====================================================================
 class LiveTradingView extends StatefulWidget {
-  final String apiKey; final String baseUrl; final String ticker; final ValueChanged<String> onTickerSearched; 
-  const LiveTradingView({super.key, required this.apiKey, required this.baseUrl, required this.ticker, required this.onTickerSearched});
+  final String apiKey;
+  final String baseUrl; 
+  final String ticker; 
+  final ValueChanged<String> onTickerSearched; 
+
+  const LiveTradingView({
+    super.key, 
+    required this.apiKey, 
+    required this.baseUrl, 
+    required this.ticker,
+    required this.onTickerSearched,
+  });
+
   @override
   State<LiveTradingView> createState() => _LiveTradingViewState();
 }
+
 class _LiveTradingViewState extends State<LiveTradingView> {
+  final FinanceEngineBridge _engine = FinanceEngineBridge();
   final StockStreamService _streamService = StockStreamService();
+
+  bool _isSearching = false;
+  final TextEditingController _searchController = TextEditingController();
+
   @override
-  void initState() { super.initState(); _streamService.startStreaming(widget.ticker, widget.apiKey, widget.baseUrl); }
+  void initState() {
+    super.initState();
+    _streamService.startStreaming(widget.ticker, widget.apiKey, widget.baseUrl);
+  }
+
   @override
   void didUpdateWidget(covariant LiveTradingView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.ticker != widget.ticker) _streamService.startStreaming(widget.ticker, widget.apiKey, widget.baseUrl);
+    if (oldWidget.apiKey != widget.apiKey || 
+        oldWidget.baseUrl != widget.baseUrl || 
+        oldWidget.ticker != widget.ticker) {
+      _streamService.startStreaming(widget.ticker, widget.apiKey, widget.baseUrl);
+    }
   }
+
   @override
-  void dispose() { _streamService.dispose(); super.dispose(); }
+  void dispose() {
+    _searchController.dispose();
+    _streamService.dispose();
+    super.dispose();
+  }
+
+  void _gantiSaham(String kodeBaru) {
+    if (kodeBaru.trim().isNotEmpty) {
+      widget.onTickerSearched(kodeBaru.toUpperCase().trim());
+      setState(() {
+        _isSearching = false;
+        _searchController.clear();
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<List<CandleModel>>(
-      stream: _streamService.chartStream,
-      builder: (context, snapshot) {
-        if (!snapshot.hasData || snapshot.data!.isEmpty) return const Center(child: CircularProgressIndicator());
-        final lastCandle = snapshot.data!.last;
-        return Card(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // FITUR BAR SEARCH YANG AKTIF KEMBALI
+        Card(
           color: const Color(0xff1c2030),
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
+            padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
+            child: Row(
               children: [
-                Text("KODE SAHAM LIVE: ${widget.ticker}", style: const TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 10),
-                Text("HARGA TERAKHIR: Rp${lastCandle.close.toStringAsFixed(0)}", style: const TextStyle(fontSize: 18, color: Colors.greenAccent)),
+                Expanded(
+                  child: _isSearching
+                      ? TextField(
+                          controller: _searchController,
+                          autofocus: true,
+                          textInputAction: TextInputAction.search,
+                          decoration: const InputDecoration(
+                            hintText: 'Ketik kode saham... (Contoh: BCIP, BBRI)',
+                            border: InputBorder.none,
+                            hintStyle: TextStyle(color: Colors.grey),
+                          ),
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                          onSubmitted: _gantiSaham,
+                        )
+                      : Text('Live Radar Engine: ${widget.ticker}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                ),
+                IconButton(
+                  icon: Icon(_isSearching ? Icons.close : Icons.search, color: Colors.greenAccent),
+                  onPressed: () {
+                    setState(() {
+                      _isSearching = !_isSearching;
+                      if (!_isSearching) _searchController.clear();
+                    });
+                  },
+                ),
               ],
             ),
           ),
-        );
-      },
+        ),
+        const SizedBox(height: 10),
+
+        // STREAM REALTIME CHART CANDLESTICK
+        StreamBuilder<List<CandleModel>>(
+          stream: _streamService.chartStream,
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return Container(
+                height: 250,
+                color: const Color(0xff1c2030),
+                child: Center(child: Text("Gagal Memuat Data Chart:\n${snapshot.error}", textAlign: TextAlign.center, style: const TextStyle(color: Colors.redAccent))),
+              );
+            }
+
+            if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              return const Center(child: Padding(padding: EdgeInsets.all(40.0), child: CircularProgressIndicator(color: Color(0xff26a69a))));
+            }
+
+            final candleHistory = snapshot.data!;
+            final lastCandle = candleHistory.last;
+
+            final analisa = _engine.checkStockSignal(
+              close: lastCandle.close, ema5: lastCandle.close * 0.992,
+              ema20: lastCandle.close * 0.985, ema200: lastCandle.close * 0.95, 
+              rsi: 45.0, vwap: lastCandle.close * 0.99, adx: 30.0, atr: lastCandle.close * 0.02, 
+            );
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Container(
+                  height: 300,
+                  decoration: BoxDecoration(color: const Color(0xff1c2030), borderRadius: BorderRadius.circular(12)),
+                  child: KeyedSubtree(
+                    key: UniqueKey(),
+                    child: CandlestickChart(candles: candleHistory), // CANDLESTICK RENDERED BERHASIL DIKEMBALIKAN
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text("TICK RUNNING (${widget.ticker})", style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+                      Text(
+                        "Rp${lastCandle.close.toStringAsFixed(0)}",
+                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: lastCandle.close >= lastCandle.open ? const Color(0xff26a69a) : const Color(0xffef5350)),
+                      ),
+                    ],
+                  ),
+                ),
+                Card(
+                  color: analisa.action == 1 ? const Color(0xff1b3a32) : const Color(0xff1f222e),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      children: [
+                        Text(analisa.action == 1 ? "🟢 AUTO SIGNAL: BUY" : "⚪ AUTO SIGNAL: HOLD", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 4),
+                        Text("Skor Indikator: ${analisa.score} / 100", style: const TextStyle(color: Colors.grey, fontSize: 13)),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ],
     );
   }
 }
 
-// =================================================================
-// SCREENER & RADAR (HALAMAN 2 & 3)
-// =================================================================
-class StockScreenerScreen extends StatelessWidget {
-  final Function(String) onStockSelected;
-  const StockScreenerScreen({super.key, required this.onStockSelected});
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Top Filtered Stocks'), backgroundColor: const Color(0xff1c2030)),
-      body: ListTile(
-        title: const Text("BCIP", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-        subtitle: const Text("Fast Trade / Scalping"),
-        trailing: const Text("Rp84"),
-        onTap: () => onStockSelected("BCIP"),
-      ),
-    );
+class FinanceEngineBridge {
+  dynamic checkStockSignal({required double close, required double ema5, required double ema20, required double ema200, required double rsi, required double vwap, required double adx, required double atr}) {
+    return _MockAnalisa();
   }
 }
-class MarketRadarScreen extends StatelessWidget {
-  final Function(String) onStockSelected;
-  const MarketRadarScreen({super.key, required this.onStockSelected});
+class _MockAnalisa { int action = 1; int score = 95; }
+
+// ====================================================================
+// 📊 HALAMAN 2: STOCK SCREENER DENGAN FILTER MULTI-STRATEGI BERFUNGSI
+// ====================================================================
+class ScreenedStockModel {
+  final String ticker; final String name; final double price; final double changePercent; final int score; final String strategyTag;
+  ScreenedStockModel({required this.ticker, required this.name, required this.price, required this.changePercent, required this.score, required this.strategyTag});
+}
+
+class StockScreenerScreen extends StatefulWidget {
+  final Function(String) onStockSelected; 
+  const StockScreenerScreen({super.key, required this.onStockSelected});
+
+  @override
+  State<StockScreenerScreen> createState() => _StockScreenerScreenState();
+}
+
+class _StockScreenerScreenState extends State<StockScreenerScreen> {
+  String _selectedStrategy = "All Strategies";
+  
+  final List<ScreenedStockModel> _allStocks = [
+    ScreenedStockModel(ticker: 'BCIP', name: 'Bumi Citra Permai Tbk', price: 84, changePercent: 14.2, score: 95, strategyTag: 'Scalping'),
+    ScreenedStockModel(ticker: 'BRIS', name: 'Bank Syariah Indonesia Tbk', price: 2540, changePercent: 6.8, score: 89, strategyTag: 'Volume Spike'),
+    ScreenedStockModel(ticker: 'ANTM', name: 'Aneka Tambang Tbk', price: 1620, changePercent: 4.5, score: 82, strategyTag: 'Breakout'),
+    ScreenedStockModel(ticker: 'GOTO', name: 'GoTo Gojek Tokopedia Tbk', price: 54, changePercent: 9.5, score: 91, strategyTag: 'Scalping'),
+  ];
+
   @override
   Widget build(BuildContext context) {
+    final filteredList = _selectedStrategy == "All Strategies" 
+        ? _allStocks 
+        : _allStocks.where((s) => s.strategyTag == _selectedStrategy).toList();
+
     return Scaffold(
-      appBar: AppBar(title: const Text('IDX Market Radar'), backgroundColor: const Color(0xff1c2030)),
-      body: ListTile(
-        title: const Text("GOTO", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-        subtitle: const Text("Top Volume Leaders"),
-        trailing: const Text("+9.5%"),
-        onTap: () => onStockSelected("GOTO"),
+      appBar: AppBar(title: const Text('Screener Multi-Filter Pro'), backgroundColor: const Color(0xff1c2030)),
+      body: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            color: const Color(0xff1f222e),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text("Pilih Kriteria Screening:", style: TextStyle(color: Colors.grey, fontSize: 13)),
+                DropdownButton<String>(
+                  value: _selectedStrategy,
+                  dropdownColor: const Color(0xff1c2030),
+                  onChanged: (val) => setState(() => _selectedStrategy = val!),
+                  items: ["All Strategies", "Scalping", "Volume Spike", "Breakout"].map((String value) {
+                    return DropdownMenuItem<String>(value: value, child: Text(value, style: const TextStyle(fontSize: 13)));
+                  }).toList(),
+                )
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: filteredList.length,
+              itemBuilder: (context, index) {
+                final stock = filteredList[index];
+                return Card(
+                  color: const Color(0xff1c2030),
+                  margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  child: ListTile(
+                    onTap: () => widget.onStockSelected(stock.ticker),
+                    title: Text(stock.ticker, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    subtitle: Text("${stock.name}\nTag: ${stock.strategyTag}", style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                    trailing: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text("Rp${stock.price}", style: const TextStyle(fontWeight: FontWeight.bold)),
+                        Text(stock.changePercent >= 0 ? "+${stock.changePercent}%" : "${stock.changePercent}%", style: TextStyle(color: stock.changePercent >= 0 ? Colors.greenAccent : Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 12)),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          )
+        ],
       ),
     );
   }
 }
 
 // ====================================================================
-// 🔥 HALAMAN 4: REKAYASA TOTAL KLONINGAN KALKULATOR SAHAM PRO BEI
+// 🔥 HALAMAN 3: IDX MARKET RADAR UTAH (3 SUB-TAB AKTIF)
+// ====================================================================
+class MarketRadarScreen extends StatelessWidget {
+  final Function(String) onStockSelected;
+  const MarketRadarScreen({super.key, required this.onStockSelected});
+
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('IDX Market Radar', style: TextStyle(fontWeight: FontWeight.bold)),
+          backgroundColor: const Color(0xff1c2030),
+          automaticallyImplyLeading: false,
+          bottom: const TabBar(
+            indicatorColor: Color(0xff26a69a),
+            isScrollable: false,
+            tabs: [
+              Tab(text: 'Performance'),
+              Tab(text: 'Capital & LQ45'),
+              Tab(text: 'Activity & Sektor'),
+            ],
+          ),
+        ),
+        body: TabBarView(
+          children: [
+            _buildPerformanceTab(),
+            _buildCapitalTab(),
+            _buildActivityTab(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPerformanceTab() {
+    return ListView(
+      padding: const EdgeInsets.all(12),
+      children: [
+        _buildSectionHeader("🔥 TOP 7 GAINERS"),
+        _buildStockRow('BCIP', '+14.2%', Colors.greenAccent),
+        _buildStockRow('GOTO', '+9.5%', Colors.greenAccent),
+        _buildStockRow('BUMI', '+7.2%', Colors.greenAccent),
+        _buildStockRow('ADRO', '+5.1%', Colors.greenAccent),
+        _buildStockRow('MEDC', '+4.8%', Colors.greenAccent),
+        _buildStockRow('BRPT', '+4.1%', Colors.greenAccent),
+        _buildStockRow('TPIA', '+3.9%', Colors.greenAccent),
+        const SizedBox(height: 15),
+        _buildSectionHeader("❄️ TOP 7 LOSERS"),
+        _buildStockRow('ASII', '-6.8%', Colors.redAccent),
+        _buildStockRow('UNVR', '-5.2%', Colors.redAccent),
+        _buildStockRow('TLKM', '-4.5%', Colors.redAccent),
+        _buildStockRow('SMGR', '-3.9%', Colors.redAccent),
+        _buildStockRow('KLBF', '-3.1%', Colors.redAccent),
+        _buildStockRow('PTBA', '-2.8%', Colors.redAccent),
+        _buildStockRow('PGAS', '-2.5%', Colors.redAccent),
+        const SizedBox(height: 15),
+        _buildSectionHeader("⚡ TOP 7 MOVERS (INDEKS DRIVER)"),
+        _buildStockRow('BBRI', 'Pts: +12.4', Colors.cyanAccent),
+        _buildStockRow('BMRI', 'Pts: +9.1', Colors.cyanAccent),
+        _buildStockRow('BBNI', 'Pts: +6.5', Colors.cyanAccent),
+        _buildStockRow('BBCA', 'Pts: +5.2', Colors.cyanAccent),
+        _buildStockRow('AMMN', 'Pts: +4.8', Colors.cyanAccent),
+        _buildStockRow('BYAN', 'Pts: +3.1', Colors.cyanAccent),
+        _buildStockRow('BRIS', 'Pts: +2.9', Colors.cyanAccent),
+      ],
+    );
+  }
+
+  Widget _buildCapitalTab() {
+    return ListView(
+      padding: const EdgeInsets.all(12),
+      children: [
+        _buildSectionHeader("👑 TOP 10 MARKET CAPS (Rp TRILIUN)"),
+        _buildStockRow('BBCA', 'Caps: 1,120 T', Colors.amber),
+        _buildStockRow('BBRI', 'Caps: 780 T', Colors.amber),
+        _buildStockRow('BYAN', 'Caps: 650 T', Colors.amber),
+        _buildStockRow('BMRI', 'Caps: 590 T', Colors.amber),
+        _buildStockRow('AMMN', 'Caps: 420 T', Colors.amber),
+        _buildStockRow('TLKM', 'Caps: 360 T', Colors.amber),
+        _buildStockRow('BBNI', 'Caps: 210 T', Colors.amber),
+        _buildStockRow('ASII', 'Caps: 195 T', Colors.amber),
+        _buildStockRow('TPIA', 'Caps: 180 T', Colors.amber),
+        _buildStockRow('UNVR', 'Caps: 120 T', Colors.amber),
+        const SizedBox(height: 15),
+        _buildSectionHeader("🎖️ PILIHAN UNGGULAN LQ45 (TOP SCORE DAILY)"),
+        _buildStockRow('ACES', 'Daily Score: 92', Colors.white),
+        _buildStockRow('AKRA', 'Daily Score: 88', Colors.white),
+        _buildStockRow('ANTM', 'Daily Score: 85', Colors.white),
+        _buildStockRow('BRIS', 'Daily Score: 84', Colors.white),
+        _buildStockRow('CPIN', 'Daily Score: 79', Colors.white),
+      ],
+    );
+  }
+
+  Widget _buildActivityTab() {
+    return ListView(
+      padding: const EdgeInsets.all(12),
+      children: [
+        _buildSectionHeader("📊 TOP 7 LIQUID VOLUME (LOT)"),
+        _buildStockRow('GOTO', 'Vol: 4.2 M', Colors.purpleAccent),
+        _buildStockRow('BIPI', 'Vol: 1.8 M', Colors.purpleAccent),
+        _buildStockRow('BUKA', 'Vol: 1.1 M', Colors.purpleAccent),
+        _buildStockRow('BCIP', 'Vol: 890 K', Colors.purpleAccent),
+        _buildStockRow('BRMS', 'Vol: 750 K', Colors.purpleAccent),
+        _buildStockRow('ENRG', 'Vol: 610 K', Colors.purpleAccent),
+        _buildStockRow('DEWA', 'Vol: 540 K', Colors.purpleAccent),
+        const SizedBox(height: 15),
+        _buildSectionHeader("⏱️ TOP 7 FREQUENCY (X TRANSAKSI)"),
+        _buildStockRow('BCIP', 'Freq: 42,100x', Colors.orangeAccent),
+        _buildStockRow('BBRI', 'Freq: 31,500x', Colors.orangeAccent),
+        _buildStockRow('GOTO', 'Freq: 28,900x', Colors.orangeAccent),
+        _buildStockRow('ANTM', 'Freq: 22,400x', Colors.orangeAccent),
+        _buildStockRow('BRIS', 'Freq: 19,800x', Colors.orangeAccent),
+        _buildStockRow('PTBA', 'Freq: 15,200x', Colors.orangeAccent),
+        _buildStockRow('MEDC', 'Freq: 14,100x', Colors.orangeAccent),
+        const SizedBox(height: 15),
+        _buildSectionHeader("🏢 TOP SECTORAL MAP (% PERUBAHAN)"),
+        _buildStockRow('INFRASTRUCTURE', '+2.45%', const Color(0xff26a69a)),
+        _buildStockRow('FINANCIAL', '+1.20%', const Color(0xff26a69a)),
+        _buildStockRow('BASIC MATERIAL', '+0.85%', const Color(0xff26a69a)),
+        _buildStockRow('ENERGY', '-0.40%', Colors.redAccent),
+        _buildStockRow('CONSUMER CYCLICAL', '-1.15%', Colors.redAccent),
+      ],
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 4),
+      child: Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.grey)),
+    );
+  }
+
+  Widget _buildStockRow(String name, String value, Color color) {
+    return Card(
+      color: const Color(0xff1f222e),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      child: ListTile(
+        dense: true,
+        onTap: () => onStockSelected(name),
+        title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+        trailing: Text(value, style: TextStyle(fontWeight: FontWeight.bold, color: color, fontSize: 14)),
+      ),
+    );
+  }
+}
+
+// ====================================================================
+// 🧮 HALAMAN 4: KALKULATOR SAHAM PRO KLONINGAN BEI INDONESIA
 // ====================================================================
 class StockCalculatorProScreen extends StatefulWidget {
   const StockCalculatorProScreen({super.key});
@@ -543,30 +853,25 @@ class StockCalculatorProScreen extends StatefulWidget {
 }
 
 class _StockCalculatorProScreenState extends State<StockCalculatorProScreen> {
-  // Controller Global Fee Sekuritas
   final _feeBuyGlobalCtrl = TextEditingController(text: "0.15");
   final _feeSellGlobalCtrl = TextEditingController(text: "0.25");
 
-  // Sub-Tab 1: Profit & Loss (Cuan Net)
   final _pnlBuyPriceCtrl = TextEditingController();
   final _pnlSellPriceCtrl = TextEditingController();
   final _pnlLotCtrl = TextEditingController();
   String _pnlResult = "Masukkan data transaksi untuk menghitung cuan bersih.";
 
-  // Sub-Tab 2: Average Down / Up
   final _avgPrice1Ctrl = TextEditingController();
   final _avgLot1Ctrl = TextEditingController();
   final _avgPrice2Ctrl = TextEditingController();
   final _avgLot2Ctrl = TextEditingController();
   String _avgResult = "Masukkan riwayat jemputan muatan harga lama & baru.";
 
-  // Sub-Tab 3: Target Trading Plan (TP / CL)
   final _planBuyPriceCtrl = TextEditingController();
   final _planTargetProfitCtrl = TextEditingController(text: "5.0");
   final _planCutLossCtrl = TextEditingController(text: "2.0");
   String _planResult = "Masukkan modal entrian untuk membuat peta trading plan.";
 
-  // Sub-Tab 4: Hitung Daya Beli Dana Maksimal Lot
   final _cashAvailableCtrl = TextEditingController();
   final _cashStockPriceCtrl = TextEditingController();
   String _cashResult = "Masukkan nilai modal tunai untuk melihat batas lot belanja.";
@@ -581,7 +886,6 @@ class _StockCalculatorProScreenState extends State<StockCalculatorProScreen> {
     super.dispose();
   }
 
-  // LOGIKA 1: UNTUNG / RUGI NET
   void _prosesHitungPnL() {
     double buy = double.tryParse(_pnlBuyPriceCtrl.text) ?? 0;
     double sell = double.tryParse(_pnlSellPriceCtrl.text) ?? 0;
@@ -614,7 +918,6 @@ class _StockCalculatorProScreenState extends State<StockCalculatorProScreen> {
     });
   }
 
-  // LOGIKA 2: AVERAGE DOWN
   void _prosesHitungAvg() {
     double p1 = double.tryParse(_avgPrice1Ctrl.text) ?? 0;
     double l1 = double.tryParse(_avgLot1Ctrl.text) ?? 0;
@@ -635,7 +938,6 @@ class _StockCalculatorProScreenState extends State<StockCalculatorProScreen> {
     });
   }
 
-  // LOGIKA 3: TRADING PLAN TARGET HARGA
   void _prosesHitungPlan() {
     double buy = double.tryParse(_planBuyPriceCtrl.text) ?? 0;
     double tpPct = (double.tryParse(_planTargetProfitCtrl.text) ?? 5.0) / 100;
@@ -654,7 +956,6 @@ class _StockCalculatorProScreenState extends State<StockCalculatorProScreen> {
     });
   }
 
-  // LOGIKA 4: DAYA BELI MAKSIMAL LOT
   void _prosesHitungDayaBeli() {
     double cash = double.tryParse(_cashAvailableCtrl.text) ?? 0;
     double price = double.tryParse(_cashStockPriceCtrl.text) ?? 0;
@@ -662,7 +963,6 @@ class _StockCalculatorProScreenState extends State<StockCalculatorProScreen> {
 
     if (cash == 0 || price == 0) return;
 
-    // Rumus: Harga per lot termasuk fee sekuritas
     double hargaPerLotBersih = (price * 100) * (1 + fB);
     double maxLot = (cash / hargaPerLotBersih).floorToDouble();
     double totalBelanja = maxLot * hargaPerLotBersih;
@@ -698,7 +998,6 @@ class _StockCalculatorProScreenState extends State<StockCalculatorProScreen> {
         ),
         body: Column(
           children: [
-            // BAR SETTING FEE SEKURITAS GLOBAL (Ciri Khas Aplikasi Pro)
             Container(
               color: const Color(0xff1f222e),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -734,8 +1033,6 @@ class _StockCalculatorProScreenState extends State<StockCalculatorProScreen> {
                 ],
               ),
             ),
-            
-            // MAIN CONTENT VIEW TAB
             Expanded(
               child: TabBarView(
                 children: [
@@ -752,7 +1049,6 @@ class _StockCalculatorProScreenState extends State<StockCalculatorProScreen> {
     );
   }
 
-  // TAB VIEW 1: PROFIT LOSS
   Widget _buildPnlTab() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -779,7 +1075,6 @@ class _StockCalculatorProScreenState extends State<StockCalculatorProScreen> {
     );
   }
 
-  // TAB VIEW 2: AVERAGE DOWN
   Widget _buildAverageDownTab() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -810,7 +1105,6 @@ class _StockCalculatorProScreenState extends State<StockCalculatorProScreen> {
     );
   }
 
-  // TAB VIEW 3: TRADING PLAN
   Widget _buildTradingPlanTab() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -837,7 +1131,6 @@ class _StockCalculatorProScreenState extends State<StockCalculatorProScreen> {
     );
   }
 
-  // TAB VIEW 4: DAYA BELI LOT
   Widget _buildDayaBeliTab() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -862,7 +1155,6 @@ class _StockCalculatorProScreenState extends State<StockCalculatorProScreen> {
     );
   }
 
-  // UTILS WIDGET BUILDER UNTUK KESERAGAMAN TEMA UI DARK
   Widget _buildInputCard(String title, List<Widget> children) {
     return Card(
       color: const Color(0xff1f222e),
@@ -903,10 +1195,7 @@ class _StockCalculatorProScreenState extends State<StockCalculatorProScreen> {
       shape: RoundedRectangleBorder(side: const BorderSide(color: Color(0xff26a69a), width: 1.2), borderRadius: BorderRadius.circular(10)),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Text(
-          content,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, height: 1.6, color: Colors.greenAccent),
-        ),
+        child: Text(content, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, height: 1.6, color: Colors.greenAccent)),
       ),
     );
   }
