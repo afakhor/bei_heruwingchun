@@ -562,24 +562,28 @@ class _MockAnalisa { int action = 1; int score = 95; }
 
 class ScreenerStockModel {
   final String ticker;
-  final double currentPrice;
-  final double priceChangePercent;
-  final String signalReason;
+  final double close;
+  final double changePercent;
+  final String signal;
+  final double volume;
 
   ScreenerStockModel({
     required this.ticker,
-    required this.currentPrice,
-    required this.priceChangePercent,
-    required this.signalReason,
+    required this.close,
+    required this.changePercent,
+    required this.signal,
+    required this.volume,
+
   });
 
   // Factory constructor yang sudah disesuaikan dengan key JSON PythonAnywhere kamu
   factory ScreenerStockModel.fromJson(Map<String, dynamic> json) {
     return ScreenerStockModel(
       ticker: json['ticker'] ?? '',
-      currentPrice: (json['close'] ?? 0).toDouble(), // 'close' di JSON dipetakan ke currentPrice
-      priceChangePercent: (json['change_percent'] ?? 0).toDouble(), // 'change_percent' dipetakan ke priceChangePercent
-      signalReason: json['signal'] ?? '', // 'signal' dipetakan ke signalReason
+      close: (json['close'] as num).toDouble(),
+      changePercent: (json['change_percent'] as num).toDouble(),
+      signal: json['signal'] ?? 'Neutral',
+      volume: (json['volume'] as num).toDouble(),
     );
   }
 }
