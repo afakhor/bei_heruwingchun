@@ -867,7 +867,7 @@ Widget _buildStockDynamicRow(RadarStockModel stock, double livePrice, double liv
     ),
   );
 }
-
+}
 
 // ====================================================================
 // 🧮 HALAMAN 4: KALKULATOR SAHAM PRO
