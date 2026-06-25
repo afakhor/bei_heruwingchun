@@ -43,16 +43,20 @@ class StockStreamService {
     try {
       // 🔗 Hubungkan ke Server Python Proxy milikmu
       // Jalur akhir akan menjadi: https://link-python-kamu.com/v1/idx/BBRI/candles
-      final url = Uri.parse('$cleanUrl/$targetTicker/candles');
+          final url = Uri.parse('$cleanUrl/$targetTicker/candles');
+
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      // 🔥 UBAH DI SINI: Dekode sebagai Map dulu, lalu ambil isi kotak "candles"
+      final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
+      final List<dynamic> dataHasil = jsonResponse['candles']; // 👈 Pipa data dialihkan ke sini
       
-      final response = await http.get(url);
+      List<CandleModel> loadedCandles = [];
 
-      if (response.statusCode == 200) {
-        final List<dynamic> dataHasil = jsonDecode(response.body);
-        List<CandleModel> loadedCandles = [];
-
-        for (var item in dataHasil) {
-          DateTime parsedDate = DateTime.parse(item['date']);
+      for (var item in dataHasil) {
+        DateTime parsedDate = DateTime.parse(item['date']);
+       
           
           loadedCandles.add(CandleModel(
             timestamp: parsedDate,
