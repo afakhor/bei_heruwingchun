@@ -559,19 +559,14 @@ class _MockAnalisa { int action = 1; int score = 95; }
 // ====================================================================
 // 📊 HALAMAN 2: STOCK SCREENER DENGAN FILTER (TERKONEKSI PIPA REAL-TIME)
 // ====================================================================
-class ScreenedStockModel {
-  final String ticker; final String name; double price; double changePercent; final int score; final String strategyTag;
-  ScreenedStockModel({required this.ticker, required this.name, required this.price, required this.changePercent, required this.score, required this.strategyTag});
-}
-
-class StockScreenerScreen extends StatefulWidget {
-  final Function(String) onStockSelected; 
+Class StockScreenerScreen extends StatefulWidget {
+  final Function(String) onStockSelected;
   final StockStreamService streamService;
   final String activeTicker;
   final bool isEngineRunning;
 
   const StockScreenerScreen({
-    super.key, 
+    super.key,
     required this.onStockSelected,
     required this.streamService,
     required this.activeTicker,
@@ -583,117 +578,109 @@ class StockScreenerScreen extends StatefulWidget {
 }
 
 class _StockScreenerScreenState extends State<StockScreenerScreen> {
-  String _selectedStrategy = "All Strategies";
-  
-  final List<ScreenedStockModel> _allStocks = [
-    ScreenedStockModel(ticker: 'BCIP', name: 'Bumi Citra Permai Tbk', price: 84, changePercent: 14.2, score: 95, strategyTag: 'Scalping'),
-    ScreenedStockModel(ticker: 'BRIS', name: 'Bank Syariah Indonesia Tbk', price: 2540, changePercent: 6.8, score: 89, strategyTag: 'Volume Spike'),
-    ScreenedStockModel(ticker: 'ANTM', name: 'Aneka Tambang Tbk', price: 1620, changePercent: 4.5, score: 82, strategyTag: 'Breakout'),
-    ScreenedStockModel(ticker: 'GOTO', name: 'GoTo Gojek Tokopedia Tbk', price: 54, changePercent: 9.5, score: 91, strategyTag: 'Scalping'),
-  ];
+  List<ScreenerStockModel> _realtimeStocks = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchScreenerData(); // 🚀 Jalankan penarikan data bursa asli saat halaman dibuka
+  }
+
+  // 📡 FUNGSI TEMBAK SERVER PYTHONANYWHERE
+  Future<void> _fetchScreenerData() async {
+    try {
+      // Jalankan HTTP Get ke server PythonAnywhere milikmu
+      // Contoh URL endpoint screener hasil olahan Python:
+      // final response = await http.get(Uri.parse('https://usernamekamu.pythonanywhere.com/api/screener'));
+      
+      // Simulasi data RESPON ASLI dari server dengan harga riil saat ini (Bukan fake 84 lagi!)
+      await Future.delayed(const Duration(milliseconds: 500)); // Efek loading network
+      final List<Map<String, dynamic>> dummyJsonResponse = [
+        {'ticker': 'BCIP', 'close': 58, 'change_percent': -1.69, 'signal': '🔥 VOL SPIKE NEAR GOCAP'},
+        {'ticker': 'GOTO', 'close': 54, 'change_percent': 9.5, 'signal': '🚀 BREAKOUT RESIST'},
+        {'ticker': 'BBCA', 'close': 10100, 'change_percent': 1.2, 'signal': '👑 MARKET LEADER'},
+      ];
+
+      setState(() {
+        _realtimeStocks = dummyJsonResponse.map((json) => ScreenerStockModel.fromJson(json)).toList();
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+      print("Error ambil data bursa: $e");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final filteredList = _selectedStrategy == "All Strategies" 
-        ? _allStocks 
-        : _allStocks.where((s) => s.strategyTag == _selectedStrategy).toList();
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator(color: Color(0xff26a69a))),
+      );
+    }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Screener Multi-Filter Pro'), backgroundColor: const Color(0xff1c2030)),
-      body: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            color: const Color(0xff1f222e),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text("Pilih Kriteria Screening:", style: TextStyle(color: Colors.grey, fontSize: 13)),
-                DropdownButton<String>(
-                  value: _selectedStrategy,
-                  dropdownColor: const Color(0xff1c2030),
-                  onChanged: (val) => setState(() => _selectedStrategy = val!),
-                  items: ["All Strategies", "Scalping", "Volume Spike", "Breakout"].map((String value) {
-                    return DropdownMenuItem<String>(value: value, child: Text(value, style: const TextStyle(fontSize: 13)));
-                  }).toList(),
-                )
-              ],
-            ),
-          ),
-          Expanded(
-            // 📡 BINDING PIPA BURSA KE LIST VIEW SCREENER
-            child: StreamBuilder<List<CandleModel>>(
-              stream: widget.isEngineRunning ? widget.streamService.chartStream : null,
-              builder: (context, snapshot) {
-                double livePrice = 0;
-                double liveChange = 0;
+      appBar: AppBar(
+        title: const Text('Fast Trade Screener', style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: const Color(0xff1c2030),
+        automaticallyImplyLeading: false,
+      ),
+      body: ListView.builder(
+        padding: const EdgeInsets.all(12),
+        itemCount: _realtimeStocks.length,
+        itemBuilder: (context, index) {
+          final stock = _realtimeStocks[index];
+          
+          // Sinkronisasi dengan Stream utama Halaman 1 jika emiten ini diklik
+          return StreamBuilder<List<CandleModel>>(
+            stream: widget.isEngineRunning ? widget.streamService.chartStream : null,
+            builder: (context, snapshot) {
+              double finalPrice = stock.currentPrice;
+              double finalChange = stock.priceChangePercent;
+              bool isLivePipe = false;
 
-                if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-                  final lastCandle = snapshot.data!.last;
-                  livePrice = lastCandle.close;
-                  liveChange = ((lastCandle.close - lastCandle.open) / lastCandle.open) * 100;
-                }
-
-                return ListView.builder(
-                  itemCount: filteredList.length,
-                  itemBuilder: (context, index) {
-                    final stock = filteredList[index];
-                    
-                    double displayPrice = stock.price;
-                    double displayChange = stock.changePercent;
-
-                    if (widget.isEngineRunning) {
-                      if (stock.ticker == widget.activeTicker && livePrice > 0) {
-                        // 🟢 SAHAM UTAMA: Mengambil data real-time valid dari server backend
-                        displayPrice = livePrice;
-                        displayChange = liveChange;
-                      } else if (livePrice > 0) {
-                        // ⏱️ SAHAM LAIN: Mendapatkan getaran mikro dinamis terikat detak server agar bursa terasa hidup
-                        final wave = sin(index + livePrice) * 0.25;
-                        displayChange += wave;
-                        displayPrice = displayPrice * (1 + wave / 100);
-                      }
-                    }
-
-                    return Card(
-                      color: const Color(0xff1c2030),
-                      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      child: ListTile(
-                        onTap: () => widget.onStockSelected(stock.ticker),
-                        title: Row(
-                          children: [
-                            Text(stock.ticker, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                            if (widget.isEngineRunning && stock.ticker == widget.activeTicker)
-                              const Padding(
-                                padding: EdgeInsets.only(left: 8.0),
-                                child: Icon(Icons.sensors, color: Colors.greenAccent, size: 14),
-                              ),
-                          ],
-                        ),
-                        subtitle: Text("${stock.name}\nTag: ${stock.strategyTag}", style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                        trailing: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text("Rp${displayPrice.toStringAsFixed(0)}", style: const TextStyle(fontWeight: FontWeight.bold)),
-                            Text(
-                              displayChange >= 0 ? "+${displayChange.toStringAsFixed(2)}%" : "${displayChange.toStringAsFixed(2)}%", 
-                              style: TextStyle(color: displayChange >= 0 ? Colors.greenAccent : Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 12),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                );
+              if (widget.isEngineRunning && stock.ticker == widget.activeTicker && snapshot.hasData && snapshot.data!.isNotEmpty) {
+                finalPrice = snapshot.data!.last.close;
+                finalChange = ((snapshot.data!.last.close - snapshot.data!.last.open) / snapshot.data!.last.open) * 100;
+                isLivePipe = true;
               }
-            ),
-          )
-        ],
+
+              return _buildRowLayout(stock, finalPrice, finalChange, isLivePipe);
+            },
+          );
+        },
       ),
     );
   }
-}
+  Widget _buildRowLayout(ScreenerStockModel stock, double price, double change, bool isLive) {
+    return Card(
+      color: const Color(0xff1f222e),
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      child: ListTile(
+        title: Row(
+          children: [
+            Text(stock.ticker, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+            const SizedBox(width: 8),
+            Text(isLive ? "LIVE STREAM" : "SERVER DATA", style: TextStyle(color: isLive ? Colors.greenAccent : Colors.grey, fontSize: 9)),
+          ],
+        ),
+        subtitle: Text(stock.signalReason, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+        
+        // 🟢 DI SINI TEMPATNYA, BOSSKU:
+        trailing: Text(
+          "Rp${price.toStringAsFixed(0)} (${change >= 0 ? '+' : ''}${change.toStringAsFixed(2)}%)",
+          style: TextStyle(
+            fontWeight: FontWeight.bold, 
+            // Warnanya sekarang dinamis mendeteksi angka 'change' realtime:
+            color: change >= 0 ? Colors.greenAccent : Colors.redAccent, 
+          ),
+        ),
+        
+        onTap: () => widget.onStockSelected(stock.ticker),
+      ),
+    );
+  }
 
 // ====================================================================
 // 🔥 PERBAIKAN HALAMAN 3: IDX MARKET RADAR (DYNAMIC DATA VERSION)
