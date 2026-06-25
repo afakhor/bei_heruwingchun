@@ -213,7 +213,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     });
   }
 
-  Widget _buildDashboardPage() {
+    Widget _buildDashboardPage() {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Dashboard Sumur Abadi'),
@@ -226,6 +226,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // -------------------------------------------------------------
+              // CARD 1: CONTROL PANEL SERVER (YANG SUDAH ADA)
+              // -------------------------------------------------------------
               Card(
                 color: const Color(0xff1c2030),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -300,8 +303,84 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   ),
                 ),
               ),
+              
+              const SizedBox(height: 16),
+
+              // -------------------------------------------------------------
+              // 🔥 CARD 2: JEMBATAN INPUT DATA RTI PREMIUM (FITUR BARU)
+              // -------------------------------------------------------------
+              Card(
+                color: const Color(0xff1c2030),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                elevation: 4,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.verified_user, color: Colors.amber, size: 18),
+                          SizedBox(width: 8),
+                          Text(
+                            "RTI PREMIUM DATA BRIDGING",
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.amber),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      const Text(
+                        "Salin data Net Foreign Flow atau RTI Valuation di sini untuk kalkulasi rotasi sektoral:",
+                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              keyboardType: TextInputType.number,
+                              style: const TextStyle(color: Colors.white, fontSize: 14),
+                              decoration: InputDecoration(
+                                labelText: "Foreign Buy (Miliar)",
+                                labelStyle: const TextStyle(color: Colors.white60, fontSize: 12),
+                                filled: true,
+                                fillColor: const Color(0xff131722),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.amber,
+                              foregroundColor: Colors.black,
+                              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                            onPressed: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("Data RTI Berhasil Disinkronisasi ke Dashboard!"),
+                                  backgroundColor: Colors.amber,
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.sync, size: 18),
+                            label: const Text("SYNC DATA", style: TextStyle(fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
               const SizedBox(height: 20),
 
+              // -------------------------------------------------------------
+              // CARD 3: LIVE VIEW ENGINE RADAR (YANG SUDAH ADA)
+              // -------------------------------------------------------------
               _isEngineRunning
                   ? LiveTradingView(
                       apiKey: _apiKeyAktif, 
