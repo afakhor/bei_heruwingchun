@@ -642,35 +642,37 @@ class _StockScreenerScreenState extends State<StockScreenerScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator(color: Color(0xff26a69a))),
-      );
-    }
+Widget build(BuildContext context) {
+  if (_isLoading) {
+    return const Scaffold(
+      body: Center(child: CircularProgressIndicator(color: Color(0xff26a69a))),
+    );
+  }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Fast Trade Screener', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: const Color(0xff1c2030),
-        automaticallyImplyLeading: false,
-      ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(12),
-        itemCount: _realtimeStocks.length,
-        itemBuilder: (context, index) {
-          final stock = _realtimeStocks[index];
-          
-          // Sinkronisasi dengan Stream utama Halaman 1 jika emiten ini diklik
+  return Scaffold(
+    appBar: AppBar(
+      title: const Text('Fast Trade Screener', style: TextStyle(fontWeight: FontWeight.bold)),
+      backgroundColor: const Color(0xff1c2030),
+      automaticallyImplyLeading: false,
+    ),
+    body: ListView.builder(
+      padding: const EdgeInsets.all(12),
+      itemCount: _realtimeStocks.length,
+      itemBuilder: (context, index) {
+        final stock = _realtimeStocks[index];
+
+        // 🔥 OPTIMISASI: StreamBuilder HANYA dipasang untuk emiten yang sedang AKTIF dipantau
+        if (widget.isEngineRunning && stock.ticker == widget.activeTicker) {
           return StreamBuilder<List<CandleModel>>(
-            stream: widget.isEngineRunning ? widget.streamService.chartStream : null,
+            stream: widget.streamService.chartStream,
             builder: (context, snapshot) {
               double finalPrice = stock.currentPrice;
               double finalChange = stock.priceChangePercent;
               bool isLivePipe = false;
 
-              if (widget.isEngineRunning && stock.ticker == widget.activeTicker && snapshot.hasData && snapshot.data!.isNotEmpty) {
+              if (snapshot.hasData && snapshot.data!.isNotEmpty) {
                 finalPrice = snapshot.data!.last.close;
+                // Menghitung % perubahan dari harga open candle terakhir di stream
                 finalChange = ((snapshot.data!.last.close - snapshot.data!.last.open) / snapshot.data!.last.open) * 100;
                 isLivePipe = true;
               }
@@ -678,38 +680,43 @@ class _StockScreenerScreenState extends State<StockScreenerScreen> {
               return _buildRowLayout(stock, finalPrice, finalChange, isLivePipe);
             },
           );
-        },
-      ),
-    );
-  }
-  Widget _buildRowLayout(ScreenerStockModel stock, double price, double change, bool isLive) {
-    return Card(
-      color: const Color(0xff1f222e),
-      margin: const EdgeInsets.symmetric(vertical: 6),
-      child: ListTile(
-        title: Row(
-          children: [
-            Text(stock.ticker, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-            const SizedBox(width: 8),
-            Text(isLive ? "LIVE STREAM" : "SERVER DATA", style: TextStyle(color: isLive ? Colors.greenAccent : Colors.grey, fontSize: 9)),
-          ],
-        ),
-        subtitle: Text(stock.signalReason, style: const TextStyle(fontSize: 11, color: Colors.grey)),
-        
-        // 🟢 DI SINI TEMPATNYA, BOSSKU:
-        trailing: Text(
-          "Rp${price.toStringAsFixed(0)} (${change >= 0 ? '+' : ''}${change.toStringAsFixed(2)}%)",
-          style: TextStyle(
-            fontWeight: FontWeight.bold, 
-            // Warnanya sekarang dinamis mendeteksi angka 'change' realtime:
-            color: change >= 0 ? Colors.greenAccent : Colors.redAccent, 
+        }
+
+        // 🟢 Jika BUKAN emiten aktif, langsung lempar layout data server biasa (Hemat CPU & Baterai HP)
+        return _buildRowLayout(stock, stock.currentPrice, stock.priceChangePercent, false);
+      },
+    ),
+  );
+}
+
+Widget _buildRowLayout(ScreenerStockModel stock, double price, double change, bool isLive) {
+  return Card(
+    color: const Color(0xff1f222e),
+    margin: const EdgeInsets.symmetric(vertical: 6),
+    child: ListTile(
+      title: Row(
+        children: [
+          Text(stock.ticker, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+          const SizedBox(width: 8),
+          Text(
+            isLive ? "LIVE STREAM" : "SERVER DATA", 
+            style: TextStyle(color: isLive ? Colors.greenAccent : Colors.grey, fontSize: 9),
           ),
-        ),
-        
-        onTap: () => widget.onStockSelected(stock.ticker),
+        ],
       ),
-    );
-  }
+      subtitle: Text(stock.signalReason, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+
+      trailing: Text(
+        "Rp${price.toStringAsFixed(0)} (${change >= 0 ? '+' : ''}${change.toStringAsFixed(2)}%)",
+        style: TextStyle(
+          fontWeight: FontWeight.bold, 
+          color: change >= 0 ? Colors.greenAccent : Colors.redAccent, 
+        ),
+      ),
+
+      onTap: () => widget.onStockSelected(stock.ticker),
+    ),
+  );
 }
 // ====================================================================
 // 🔥 PERBAIKAN HALAMAN 3: IDX MARKET RADAR (DYNAMIC DATA VERSION)
