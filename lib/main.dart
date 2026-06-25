@@ -665,7 +665,7 @@ class _StockScreenerScreenState extends State<StockScreenerScreen> {
                             Text(stock.ticker, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                             if (widget.isEngineRunning && stock.ticker == widget.activeTicker)
                               const Padding(
-                                padding: EdgeInsets.left(8.0),
+                                padding: EdgeInsets.only(left: 8.0),
                                 child: Icon(Icons.sensors, color: Colors.greenAccent, size: 14),
                               ),
                           ],
