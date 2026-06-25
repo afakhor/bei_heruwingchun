@@ -142,7 +142,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                       ? AnimatedContainer(
                           duration: const Duration(milliseconds: 150),
                           transformAlignment: Alignment.center, 
-                          transform: Matrix4.identity()...scale(_isClicked ? 0.85 : 1.0),
+                          transform: Matrix4.identity()..scale(_isClicked ? 0.85 : 1.0),
                           child: const Text(
                             '👆',
                             key: ValueKey('finger_icon'),
