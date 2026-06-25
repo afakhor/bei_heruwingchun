@@ -696,8 +696,22 @@ class _StockScreenerScreenState extends State<StockScreenerScreen> {
 }
 
 // ====================================================================
-// 🔥 HALAMAN 3: IDX MARKET RADAR (TERKONEKSI PIPA REAL-TIME)
+// 🔥 PERBAIKAN HALAMAN 3: IDX MARKET RADAR (DYNAMIC DATA VERSION)
 // ====================================================================
+class RadarStockModel {
+  final String ticker;
+  final double basePrice;
+  final double baseChange;
+  final Color alertColor;
+
+  RadarStockModel({
+    required this.ticker,
+    required this.basePrice,
+    required this.baseChange,
+    required this.alertColor,
+  });
+}
+
 class MarketRadarScreen extends StatelessWidget {
   final Function(String) onStockSelected;
   final StockStreamService streamService;
@@ -712,6 +726,39 @@ class MarketRadarScreen extends StatelessWidget {
     required this.isEngineRunning,
   });
 
+  // 📋 DATA MASTER TAB 1: PERFORMANCE (Bisa kamu ubah angka awalnya di sini agar mendekati asli)
+  List<RadarStockModel> get _gainers => [
+    RadarStockModel(ticker: 'BCIP', basePrice: 84, baseChange: 14.2, alertColor: Colors.greenAccent),
+    RadarStockModel(ticker: 'GOTO', basePrice: 54, baseChange: 9.5, alertColor: Colors.greenAccent),
+    RadarStockModel(ticker: 'BUMI', basePrice: 120, baseChange: 7.2, alertColor: Colors.greenAccent),
+    RadarStockModel(ticker: 'ADRO', basePrice: 2800, baseChange: 5.1, alertColor: Colors.greenAccent),
+    RadarStockModel(ticker: 'MEDC', basePrice: 1350, baseChange: 4.8, alertColor: Colors.greenAccent),
+  ];
+
+  List<RadarStockModel> get _losers => [
+    RadarStockModel(ticker: 'ASII', basePrice: 4600, baseChange: -6.8, alertColor: Colors.redAccent),
+    RadarStockModel(ticker: 'UNVR', basePrice: 2300, baseChange: -5.2, alertColor: Colors.redAccent),
+    RadarStockModel(ticker: 'TLKM', basePrice: 2900, baseChange: -4.5, alertColor: Colors.redAccent),
+  ];
+
+  // 📋 DATA MASTER TAB 2: CAPITAL & LQ45
+  List<RadarStockModel> get _marketCaps => [
+    RadarStockModel(ticker: 'BBCA', basePrice: 10100, baseChange: 1.2, alertColor: Colors.amber),
+    RadarStockModel(ticker: 'BBRI', basePrice: 4400, baseChange: -0.8, alertColor: Colors.amber),
+    RadarStockModel(ticker: 'BMRI', basePrice: 6100, baseChange: 0.5, alertColor: Colors.amber),
+  ];
+
+  List<RadarStockModel> get _lq45Pilihan => [
+    RadarStockModel(ticker: 'ANTM', basePrice: 1620, baseChange: 4.5, alertColor: Colors.white),
+    RadarStockModel(ticker: 'BRIS', basePrice: 2540, baseChange: 6.8, alertColor: Colors.white),
+  ];
+
+  // 📋 DATA MASTER TAB 3: ACTIVITY & SEKTOR
+  List<RadarStockModel> get _activityVolume => [
+    RadarStockModel(ticker: 'GOTO', basePrice: 54, baseChange: 9.5, alertColor: Colors.purpleAccent),
+    RadarStockModel(ticker: 'BCIP', basePrice: 84, baseChange: 14.2, alertColor: Colors.purpleAccent),
+  ];
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
@@ -723,15 +770,13 @@ class MarketRadarScreen extends StatelessWidget {
           automaticallyImplyLeading: false,
           bottom: const TabBar(
             indicatorColor: Color(0xff26a69a),
-            isScrollable: false,
             tabs: [
               Tab(text: 'Performance'),
               Tab(text: 'Capital & LQ45'),
-              Tab(text: 'Activity & Sektor'),
+              Tab(text: 'Activity'),
             ],
           ),
         ),
-        // 📡 BINDING PIPA BURSA PADA SUB-TAB RADAR
         body: StreamBuilder<List<CandleModel>>(
           stream: isEngineRunning ? streamService.chartStream : null,
           builder: (context, snapshot) {
@@ -746,9 +791,9 @@ class MarketRadarScreen extends StatelessWidget {
 
             return TabBarView(
               children: [
-                _buildPerformanceTab(livePrice, liveChange),
-                _buildCapitalTab(livePrice, liveChange),
-                _buildActivityTab(livePrice, liveChange),
+                _buildDynamicTab(_gainers, _losers, "🔥 TOP GAINERS", "❄️ TOP LOSERS", livePrice, liveChange),
+                _buildDynamicTab(_marketCaps, _lq45Pilihan, "👑 TOP MARKET CAPS", "🎖️ PILIHAN UNGGULAN LQ45", livePrice, liveChange),
+                _buildDynamicTab(_activityVolume, [], "📊 RANKING VOLUME TERAKTIF", "", livePrice, liveChange),
               ],
             );
           }
@@ -757,59 +802,18 @@ class MarketRadarScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildPerformanceTab(double livePrice, double liveChange) {
+  // 🛠️ FUNGSI BUILDER TAB DINAMIS (Menggantikan baris statis kemaren)
+  Widget _buildDynamicTab(List<RadarStockModel> section1, List<RadarStockModel> section2, String title1, String title2, double livePrice, double liveChange) {
     return ListView(
       padding: const EdgeInsets.all(12),
       children: [
-        _buildSectionHeader("🔥 TOP 7 GAINERS"),
-        _buildStockRow('BCIP', 84, 14.2, Colors.greenAccent, livePrice, liveChange, 1),
-        _buildStockRow('GOTO', 54, 9.5, Colors.greenAccent, livePrice, liveChange, 2),
-        _buildStockRow('BUMI', 120, 7.2, Colors.greenAccent, livePrice, liveChange, 3),
-        _buildStockRow('ADRO', 2800, 5.1, Colors.greenAccent, livePrice, liveChange, 4),
-        _buildStockRow('MEDC', 1350, 4.8, Colors.greenAccent, livePrice, liveChange, 5),
-        _buildStockRow('BRPT', 980, 4.1, Colors.greenAccent, livePrice, liveChange, 6),
-        _buildStockRow('TPIA', 8200, 3.9, Colors.greenAccent, livePrice, liveChange, 7),
-        const SizedBox(height: 15),
-        _buildSectionHeader("❄️ TOP 7 LOSERS"),
-        _buildStockRow('ASII', 4600, -6.8, Colors.redAccent, livePrice, liveChange, 8),
-        _buildStockRow('UNVR', 2300, -5.2, Colors.redAccent, livePrice, liveChange, 9),
-        _buildStockRow('TLKM', 2900, -4.5, Colors.redAccent, livePrice, liveChange, 10),
-        _buildStockRow('SMGR', 3900, -3.9, Colors.redAccent, livePrice, liveChange, 11),
-        _buildStockRow('KLBF', 1450, -3.1, Colors.redAccent, livePrice, liveChange, 12),
-        _buildStockRow('PTBA', 2400, -2.8, Colors.redAccent, livePrice, liveChange, 13),
-        _buildStockRow('PGAS', 1500, -2.5, Colors.redAccent, livePrice, liveChange, 14),
-      ],
-    );
-  }
-
-  Widget _buildCapitalTab(double livePrice, double liveChange) {
-    return ListView(
-      padding: const EdgeInsets.all(12),
-      children: [
-        _buildSectionHeader("👑 TOP 10 MARKET CAPS"),
-        _buildStockRow('BBCA', 10100, 1.2, Colors.amber, livePrice, liveChange, 15),
-        _buildStockRow('BBRI', 4400, -0.8, Colors.amber, livePrice, liveChange, 16),
-        _buildStockRow('BMRI', 6100, 0.5, Colors.amber, livePrice, liveChange, 17),
-        _buildStockRow('TLKM', 2900, -4.5, Colors.amber, livePrice, liveChange, 18),
-        const SizedBox(height: 15),
-        _buildSectionHeader("🎖️ PILIHAN UNGGULAN LQ45"),
-        _buildStockRow('ANTM', 1620, 4.5, Colors.white, livePrice, liveChange, 19),
-        _buildStockRow('BRIS', 2540, 6.8, Colors.white, livePrice, liveChange, 20),
-      ],
-    );
-  }
-
-  Widget _buildActivityTab(double livePrice, double liveChange) {
-    return ListView(
-      padding: const EdgeInsets.all(12),
-      children: [
-        _buildSectionHeader("📊 RANKING VOLUME TERAKTIF"),
-        _buildStockRow('GOTO', 54, 9.5, Colors.purpleAccent, livePrice, liveChange, 21),
-        _buildStockRow('BCIP', 84, 14.2, Colors.purpleAccent, livePrice, liveChange, 22),
-        const SizedBox(height: 15),
-        _buildSectionHeader("🏢 MAP SEKTORAL BURSA"),
-        _buildStockRow('FINANCIAL', 0, 1.20, const Color(0xff26a69a), livePrice, liveChange, 23),
-        _buildStockRow('INFRASTRUCTURE', 0, 2.45, const Color(0xff26a69a), livePrice, liveChange, 24),
+        _buildSectionHeader(title1),
+        ...section1.map((stock) => _buildStockDynamicRow(stock, livePrice, liveChange)),
+        if (section2.isNotEmpty) ...[
+          const SizedBox(height: 15),
+          _buildSectionHeader(title2),
+          ...section2.map((stock) => _buildStockDynamicRow(stock, livePrice, liveChange)),
+        ],
       ],
     );
   }
@@ -821,47 +825,62 @@ class MarketRadarScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildStockRow(String name, double basePrice, double baseChange, Color color, double livePrice, double liveChange, int index) {
-    double finalPrice = basePrice;
-    double finalChange = baseChange;
+Widget _buildStockDynamicRow(RadarStockModel stock, double livePrice, double liveChange) {
+  double finalPrice = stock.basePrice;
+  double finalChange = stock.baseChange;
+  bool isRealtime = false;
 
-    if (isEngineRunning) {
-      if (name == activeTicker && livePrice > 0) {
-        if (basePrice > 0) finalPrice = livePrice;
-        finalChange = liveChange;
-      } else if (livePrice > 0) {
-        final wave = sin(index + livePrice) * 0.2;
-        finalChange += wave;
-        if (basePrice > 0) finalPrice = finalPrice * (1 + wave / 100);
-      }
-    }
-
-    String trailingText = finalChange >= 0 ? "+${finalChange.toStringAsFixed(2)}%" : "${finalChange.toStringAsFixed(2)}%";
-    if (basePrice > 0) {
-      trailingText = "Rp${finalPrice.toStringAsFixed(0)} ($trailingText)";
-    }
-
-    return Card(
-      color: const Color(0xff1f222e),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      child: ListTile(
-        dense: true,
-        onTap: () => onStockSelected(name),
-        title: Row(
-          children: [
-            Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-            if (isEngineRunning && name == activeTicker)
-              const Padding(
-                padding: EdgeInsets.only(left: 6.0),
-                child: Icon(Icons.sensors, color: Colors.greenAccent, size: 12),
-              ),
-          ],
-        ),
-        trailing: Text(trailingText, style: TextStyle(fontWeight: FontWeight.bold, color: color, fontSize: 13)),
-      ),
-    );
+  if (isEngineRunning && stock.ticker == activeTicker && livePrice > 0) {
+    // 🟢 HANYA EMITEN INI YANG VALID & REAL-TIME (Koneksi Pipa Server Halaman 1)
+    finalPrice = livePrice;
+    finalChange = liveChange;
+    isRealtime = true;
   }
+
+  String trailingText = finalChange >= 0 
+      ? "+${finalChange.toStringAsFixed(2)}%" 
+      : "${finalChange.toStringAsFixed(2)}%";
+      
+  if (finalPrice > 0) {
+    trailingText = "Rp${finalPrice.toStringAsFixed(0)} ($trailingText)";
+  }
+
+  return Card(
+    color: const Color(0xff1f222e),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+    child: ListTile(
+      dense: true,
+      onTap: () => onStockSelected(stock.ticker),
+      title: Row(
+        children: [
+          Text(stock.ticker, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+          const SizedBox(width: 6),
+          // 📊 INDIKATOR KEJUJURAN DATA: Biar kamu gak capek nyari penyakitnya lagi
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: isRealtime ? Colors.green.withOpacity(0.2) : Colors.amber.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              isRealtime ? "LIVE" : "STATIC",
+              style: TextStyle(
+                color: isRealtime ? Colors.greenAccent : Colors.amberAccent, 
+                fontSize: 9, 
+                fontWeight: FontWeight.bold
+              ),
+            ),
+          ),
+        ],
+      ),
+      trailing: Text(
+        trailingText, 
+        style: TextStyle(fontWeight: FontWeight.bold, color: stock.alertColor, fontSize: 13)
+      ),
+    ),
+  );
 }
+
 
 // ====================================================================
 // 🧮 HALAMAN 4: KALKULATOR SAHAM PRO
