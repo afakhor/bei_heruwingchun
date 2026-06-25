@@ -559,7 +559,7 @@ class _MockAnalisa { int action = 1; int score = 95; }
 // ====================================================================
 // 📊 HALAMAN 2: STOCK SCREENER DENGAN FILTER (TERKONEKSI PIPA REAL-TIME)
 // ====================================================================
-Class StockScreenerScreen extends StatefulWidget {
+class StockScreenerScreen extends StatefulWidget {
   final Function(String) onStockSelected;
   final StockStreamService streamService;
   final String activeTicker;
@@ -681,7 +681,7 @@ class _StockScreenerScreenState extends State<StockScreenerScreen> {
       ),
     );
   }
-
+}
 // ====================================================================
 // 🔥 PERBAIKAN HALAMAN 3: IDX MARKET RADAR (DYNAMIC DATA VERSION)
 // ====================================================================
