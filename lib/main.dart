@@ -562,21 +562,24 @@ class _MockAnalisa { int action = 1; int score = 95; }
 
 class ScreenerStockModel {
   final String ticker;
-  final double basePrice;
-  final double baseChange;
+  final double currentPrice;
+  final double priceChangePercent;
+  final String signalReason;
 
   ScreenerStockModel({
     required this.ticker,
-    required this.basePrice,
-    required this.baseChange,
+    required this.currentPrice,
+    required this.priceChangePercent,
+    required this.signalReason,
   });
 
-  // Factory constructor untuk mengubah data dummy JSON menjadi objek Dart
+  // Factory constructor yang sudah disesuaikan dengan key JSON PythonAnywhere kamu
   factory ScreenerStockModel.fromJson(Map<String, dynamic> json) {
     return ScreenerStockModel(
       ticker: json['ticker'] ?? '',
-      basePrice: (json['basePrice'] ?? 0).toDouble(),
-      baseChange: (json['baseChange'] ?? 0).toDouble(),
+      currentPrice: (json['close'] ?? 0).toDouble(), // 'close' di JSON dipetakan ke currentPrice
+      priceChangePercent: (json['change_percent'] ?? 0).toDouble(), // 'change_percent' dipetakan ke priceChangePercent
+      signalReason: json['signal'] ?? '', // 'signal' dipetakan ke signalReason
     );
   }
 }
