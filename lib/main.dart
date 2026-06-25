@@ -299,60 +299,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               ),
               const SizedBox(height: 12),
 
-              // PANEL 2: INTEGRASI DATA RTI PREMIUM 
-              Card(
-                color: const Color(0xff1c2030),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                elevation: 4,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Row(
-                        children: [
-                          Icon(Icons.verified_user, color: Colors.amber, size: 18),
-                          SizedBox(width: 8),
-                          Text("RTI PREMIUM DATA BRIDGING", style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.amber)),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      const Text("Sinkronisasikan analisa screening RTI Pro ke mesin lokal:", style: TextStyle(fontSize: 12, color: Colors.grey)),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              keyboardType: TextInputType.number,
-                              style: const TextStyle(color: Colors.white, fontSize: 13),
-                              decoration: InputDecoration(
-                                labelText: "Foreign Flow Net Buy (Miliar)",
-                                labelStyle: const TextStyle(color: Colors.white60, fontSize: 11),
-                                filled: true,
-                                fillColor: const Color(0xff131722),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(backgroundColor: Colors.amber, foregroundColor: Colors.black, padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
-                            onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Data RTI Berhasil Disinkronisasi!"), backgroundColor: Colors.amber));
-                            },
-                            icon: const Icon(Icons.sync, size: 16),
-                            label: const Text("SYNC", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
 
-              // PANEL 3: CHART REALSTREAM & SIGNAL ANALYST
+              // PANEL 2: CHART REALSTREAM & SIGNAL ANALYST
               _isEngineRunning
                   ? LiveTradingView(
                       apiKey: _apiKeyAktif, 
