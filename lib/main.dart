@@ -224,9 +224,9 @@ class MainNavigationScreen extends StatefulWidget {
 }
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
-  // 🌐 SEKARANG DEFAULT-NYA LANGSUNG MENGARAH KE PIPA PYTHON DI RENDER
-  final TextEditingController _urlInputController = 
-      TextEditingController(text: 'https://sumur-abadi-api.onrender.com/v1/idx');
+  // 🌐 SEKARANG DEFAULT-NYA LANGSUNG MENGARAH KE PYTHONANYWHERE
+final TextEditingController _urlInputController = 
+    TextEditingController(text: 'https://heruwingchun.pythonanywhere.com/v1/idx'); // 👈 JADI INI
   final TextEditingController _apiInputController = TextEditingController();
 
   String _urlAktif = "";
