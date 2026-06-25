@@ -33,8 +33,6 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<Alignment> _alignmentAnimation;
-
-  // Mesin animasi untuk efek gelombang kejut otomatis
   late AnimationController _rippleController;
 
   bool _isAtCenter = false; 
@@ -44,19 +42,16 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   void initState() {
     super.initState();
 
-    // 1. Animasi pergerakan ikon mendarat (2 Detik)
     _controller = AnimationController(
       duration: const Duration(seconds: 2),
       vsync: this,
     );
 
-    // 2. Animasi efek kejut/radar otomatis (700ms)
     _rippleController = AnimationController(
       duration: const Duration(milliseconds: 700),
       vsync: this,
     );
 
-    // 🔥 KITA KUNCI: Titik akhir (end) wajib mendarat di Alignment.center (0.0, 0.0)
     _alignmentAnimation = Tween<Alignment>(
       begin: const Alignment(2.2 , 3.2), 
       end: Alignment.center, 
@@ -65,7 +60,6 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       curve: Curves.fastOutSlowIn, 
     ));
 
-    // Pemicu Otomatis saat gerakan mendarat selesai
     _controller.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
         if (mounted) {
@@ -73,12 +67,11 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
             _isAtCenter = true; 
             _isClicked = true; 
           });
-          _rippleController.forward(); // 💥 Jalankan radar otomatis
+          _rippleController.forward(); 
         }
       }
     });
 
-    // Pindah halaman otomatis setelah efek radar selesai memudar
     _rippleController.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
         if (mounted) {
@@ -122,7 +115,6 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
             ),
           ),
 
-          // LAPISAN EFEK: Menggambar garis radar melingkar otomatis di tengah-tengah
           if (_isClicked)
             AnimatedBuilder(
               animation: _rippleController,
@@ -136,7 +128,6 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
               },
             ),
 
-          // LAPISAN UTAMA: Pergerakan Icon Alat (Murni Visual Otomatis)
           AnimatedBuilder(
             animation: _alignmentAnimation,
             builder: (context, child) {
@@ -150,9 +141,8 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                   child: _isAtCenter
                       ? AnimatedContainer(
                           duration: const Duration(milliseconds: 150),
-                          // 🔥 KUNCI KEDUA: Paksa transformasi Matrix skala menyusut tepat di as tengah teks
                           transformAlignment: Alignment.center, 
-                          transform: Matrix4.identity()..scale(_isClicked ? 0.85 : 1.0),
+                          transform: Matrix4.identity()...scale(_isClicked ? 0.85 : 1.0),
                           child: const Text(
                             '👆',
                             key: ValueKey('finger_icon'),
@@ -174,9 +164,6 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   }
 }
 
-// =================================================================
-// PELUKIS GELOMBANG KEJUT (SHOCKWAVE RADAR PAINTER)
-// =================================================================
 class ShockwavePainter extends CustomPainter {
   final double progress;
   ShockwavePainter({required this.progress});
@@ -185,7 +172,6 @@ class ShockwavePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
 
-    // Ring 1: Gelombang Kejut Utama (Warna Hijau Trading)
     final paint1 = Paint()
       ..color = const Color(0xff26a69a).withOpacity(1.0 - progress) 
       ..style = PaintingStyle.stroke
@@ -194,7 +180,6 @@ class ShockwavePainter extends CustomPainter {
     double radius1 = progress * 130; 
     canvas.drawCircle(center, radius1, paint1);
 
-    // Ring 2: Gelombang Lapisan Kedua (Warna Cyan Listrik)
     if (progress > 0.2) {
       final progress2 = (progress - 0.2) / 0.8;
       final paint2 = Paint()
@@ -214,7 +199,7 @@ class ShockwavePainter extends CustomPainter {
 }
 
 // ============================================================
-// 📊 1. HALAMAN UTAMA / DASHBOARD (INPUTAN URL & KEY LANGSUNG NEMPEL)
+// 📊 1. NAVIGASI UTAMA (MENGGUNAKAN INDEXED STACK AGAR ANTI-MACET)
 // ============================================================
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -224,9 +209,10 @@ class MainNavigationScreen extends StatefulWidget {
 }
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
-  // 🌐 SEKARANG DEFAULT-NYA LANGSUNG MENGARAH KE PYTHONANYWHERE
-final TextEditingController _urlInputController = 
-    TextEditingController(text: 'https://heruwingchun.pythonanywhere.com/v1/idx'); // 👈 JADI INI
+  int _currentIndex = 0; // Mengontrol halaman aktif
+
+  final TextEditingController _urlInputController = 
+      TextEditingController(text: 'https://heruwingchun.pythonanywhere.com/v1/idx'); 
   final TextEditingController _apiInputController = TextEditingController();
 
   String _urlAktif = "";
@@ -240,8 +226,8 @@ final TextEditingController _urlInputController =
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
+  // Metode untuk merakit tampilan khusus Halaman 1 (Dashboard)
+  Widget _buildDashboardPage() {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Dashboard Sumur Abadi'),
@@ -326,7 +312,6 @@ final TextEditingController _urlInputController =
                               String inputKey = _apiInputController.text.trim();
                               String inputUrl = _urlInputController.text.trim();
 
-                              // 💡 JIKA KOSONG, OTOMATIS JADI '1' AGAR LULUS VALIDASI INTERNAl
                               if (inputKey.isEmpty) {
                                 inputKey = "1";
                               }
@@ -376,6 +361,44 @@ final TextEditingController _urlInputController =
       ),
     );
   }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      // 🔥 KUNCI UTAMA: Menggunakan IndexedStack agar status chart dan mesin data tidak macet/berhenti saat pindah tab
+      body: IndexedStack(
+        index: _currentIndex,
+        children: [
+          _buildDashboardPage(),       // 👈 Indeks 0: Halaman 1 (Dashboard)
+          const StockScreenerScreen(),  // 👈 Indeks 1: Halaman 2 (Screener)
+        ],
+      ),
+      
+      // 📱 MENU NAVIGASI BAWAH
+      bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: const Color(0xff1c2030),
+        selectedItemColor: const Color(0xff26a69a),
+        unselectedItemColor: Colors.grey,
+        currentIndex: _currentIndex,
+        type: BottomNavigationBarType.fixed,
+        onTap: (int index) {
+          setState(() {
+            _currentIndex = index; // Pindah tab halaman saat diklik
+          });
+        },
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.dashboard_rounded),
+            label: 'Dashboard',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.analytics_rounded),
+            label: 'Screener',
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 // =================================================================
@@ -383,12 +406,12 @@ final TextEditingController _urlInputController =
 // =================================================================
 class LiveTradingView extends StatefulWidget {
   final String apiKey;
-  final String baseUrl; // 👈 Menampung URL dinamis dari atas
-  
+  final String baseUrl; 
+
   const LiveTradingView({
     super.key, 
     required this.apiKey, 
-    required this.baseUrl, // 👈 Wajib diisi saat dipanggil
+    required this.baseUrl, 
   });
 
   @override
@@ -406,14 +429,12 @@ class _LiveTradingViewState extends State<LiveTradingView> {
   @override
   void initState() {
     super.initState();
-    // 🚀 SPOT 2A: Tembak pipa data menggunakan baseUrl kiriman UI
     _streamService.startStreaming(_currentTicker, widget.apiKey, widget.baseUrl);
   }
 
   @override
   void didUpdateWidget(covariant LiveTradingView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // 🚀 SPOT 2B: Jika key atau URL di atas diganti, mesin otomatis merespon tanpa mati
     if (oldWidget.apiKey != widget.apiKey || oldWidget.baseUrl != widget.baseUrl) {
       _streamService.startStreaming(_currentTicker, widget.apiKey, widget.baseUrl);
     }
@@ -432,7 +453,6 @@ class _LiveTradingViewState extends State<LiveTradingView> {
         _currentTicker = kodeBaru.toUpperCase().trim();
         _isSearching = false;
         _searchController.clear();
-        // 🚀 SPOT 2C: Ambil saham baru dengan menyertakan alamat baseUrl dinamis
         _streamService.startStreaming(_currentTicker, widget.apiKey, widget.baseUrl);
       });
     }
@@ -613,7 +633,6 @@ class _LiveTradingViewState extends State<LiveTradingView> {
   }
 }
 
-// Mock class pembantu agar compiler tidak nyari kode luar saat ditimpa
 class FinanceEngineBridge {
   dynamic checkStockSignal({required double close, required double ema5, required double ema20, required double ema200, required double rsi, required double vwap, required double adx, required double atr}) {
     return _MockAnalisa();
@@ -625,8 +644,9 @@ class _MockAnalisa {
   double stopLoss = 0;
   double takeProfit = 0;
 }
+
 // =================================================================
-// 📱 3. FITUR RADAR SCREENER DATA SAHAM (UPGRADED VERSION)
+// 📱 3. FITUR RADAR SCREENER DATA SAHAM (HALAMAN 2 KINI BISA DIBUKA)
 // =================================================================
 class ScreenedStockModel {
   final int rank;
@@ -666,7 +686,7 @@ class _StockScreenerScreenState extends State<StockScreenerScreen> {
 
   final TextEditingController _screenerSearchController = TextEditingController();
   String _searchKeyword = "";
-  String _selectedStrategyGroup = "ALL"; // Menyimpan filter kategori aktif
+  String _selectedStrategyGroup = "ALL"; 
 
   @override
   void dispose() {
@@ -676,11 +696,10 @@ class _StockScreenerScreenState extends State<StockScreenerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Proses penyaringan gabungan: Keyword Search + Quick Filter Chips
     final filteredResults = _allStocks.where((ScreenedStockModel stock) {
       final matchesKeyword = stock.ticker.toLowerCase().contains(_searchKeyword.toLowerCase()) ||
                              stock.name.toLowerCase().contains(_searchKeyword.toLowerCase());
-      
+
       if (_selectedStrategyGroup == "ALL") {
         return matchesKeyword;
       } else if (_selectedStrategyGroup == "SCALPING") {
@@ -699,14 +718,13 @@ class _StockScreenerScreenState extends State<StockScreenerScreen> {
         title: const Text('Top Filtered Stocks Today', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: const Color(0xff1c2030),
         centerTitle: true,
-        iconTheme: const IconThemeData(color: Colors.white),
+        automaticallyImplyLeading: false, // Menghapus panah back karena ini halaman utama tab 2
       ),
       body: Padding(
         padding: const EdgeInsets.all(12.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. INPUT SEARCH
             TextField(
               controller: _screenerSearchController,
               style: const TextStyle(color: Colors.white),
@@ -726,7 +744,6 @@ class _StockScreenerScreenState extends State<StockScreenerScreen> {
             ),
             const SizedBox(height: 12),
 
-            // 2. FITUR BARU: QUICK FILTER CHIPS (Horizontal Scroll)
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
@@ -740,7 +757,6 @@ class _StockScreenerScreenState extends State<StockScreenerScreen> {
             ),
             const SizedBox(height: 15),
 
-            // 3. LIST DAFTAR SAHAM
             Expanded(
               child: filteredResults.isEmpty
                   ? const Center(child: Text('Saham tidak ditemukan dalam radar harian ini.', style: TextStyle(color: Colors.white)))
@@ -756,7 +772,6 @@ class _StockScreenerScreenState extends State<StockScreenerScreen> {
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                           child: ListTile(
                             onTap: () {
-                              // Aksi ketika saham diklik (bisa dipasang navigasi balik ke Chart)
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(content: Text('Mengalihkan analisa ke ${stock.ticker}'), duration: const Duration(seconds: 1)),
                               );
@@ -816,7 +831,6 @@ class _StockScreenerScreenState extends State<StockScreenerScreen> {
     );
   }
 
-  // Helper Widget untuk membuat build chip dengan style gelap/terang seragam
   Widget _buildFilterChip(String groupKey, String label) {
     bool isSelected = _selectedStrategyGroup == groupKey;
     return Padding(
