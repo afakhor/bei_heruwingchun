@@ -13,7 +13,10 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      theme: ThemeData.dark(),
+      theme: ThemeData.dark().copyWith(
+        scaffoldBackgroundColor: const Color(0xff161a25),
+        primaryColor: const Color(0xff26a69a),
+      ),
       debugShowCheckedModeBanner: false,
       home: const SplashScreen(),
     );
@@ -21,7 +24,7 @@ class MyApp extends StatelessWidget {
 }
 
 // =================================================================
-// WIDGET SPLASH SCREEN MURNI OTOMATIS (EFEK RADAR SEPUSAT & PRESISI)
+// WIDGET SPLASH SCREEN
 // =================================================================
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -97,22 +100,10 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF7F00FF), 
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF7F00FF),
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        title: const Text(
-          'PORTO HERU WINGCHUN',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w500, fontSize: 20),
-        ),
-      ),
       body: Stack(
         children: [
           Positioned.fill(
-            child: Image.asset(
-              'assets/images/splash.png', 
-              fit: BoxFit.cover,       
-            ),
+            child: Container(color: const Color(0xFF7F00FF)),
           ),
 
           if (_isClicked)
@@ -171,7 +162,6 @@ class ShockwavePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-
     final paint1 = Paint()
       ..color = const Color(0xff26a69a).withOpacity(1.0 - progress) 
       ..style = PaintingStyle.stroke
@@ -179,17 +169,6 @@ class ShockwavePainter extends CustomPainter {
 
     double radius1 = progress * 130; 
     canvas.drawCircle(center, radius1, paint1);
-
-    if (progress > 0.2) {
-      final progress2 = (progress - 0.2) / 0.8;
-      final paint2 = Paint()
-        ..color = Colors.cyanAccent.withOpacity(1.0 - progress2)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.5 * (1.0 - progress2);
-
-      double radius2 = progress2 * 90;
-      canvas.drawCircle(center, radius2, paint2);
-    }
   }
 
   @override
@@ -198,9 +177,9 @@ class ShockwavePainter extends CustomPainter {
   }
 }
 
-// ============================================================
-// 📊 1. NAVIGASI UTAMA (MENGGUNAKAN INDEXED STACK AGAR ANTI-MACET)
-// ============================================================
+// ====================================================================
+// 📊 MASTER NAVIGASI (4 HALAMAN UTAMA)
+// ====================================================================
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
 
@@ -209,7 +188,8 @@ class MainNavigationScreen extends StatefulWidget {
 }
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
-  int _currentIndex = 0; // Mengontrol halaman aktif
+  int _currentIndex = 0; 
+  String _activeTicker = 'BCIP'; 
 
   final TextEditingController _urlInputController = 
       TextEditingController(text: 'https://heruwingchun.pythonanywhere.com/v1/idx'); 
@@ -226,7 +206,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     super.dispose();
   }
 
-  // Metode untuk merakit tampilan khusus Halaman 1 (Dashboard)
+  void _hubungkanKeDashboard(String kodeSahamBaru) {
+    setState(() {
+      _activeTicker = kodeSahamBaru.toUpperCase(); 
+      _currentIndex = 0; 
+    });
+  }
+
   Widget _buildDashboardPage() {
     return Scaffold(
       appBar: AppBar(
@@ -265,14 +251,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                           filled: true,
                           fillColor: const Color(0xff131722),
                           contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xff26a69a)),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Colors.grey),
-                          ),
+                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xff26a69a))),
+                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Colors.grey)),
                         ),
                       ),
                       const SizedBox(height: 10),
@@ -290,14 +270,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                                 filled: true,
                                 fillColor: const Color(0xff131722),
                                 contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                  borderSide: const BorderSide(color: Color(0xff26a69a)),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                  borderSide: const BorderSide(color: Colors.grey),
-                                ),
+                                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xff26a69a))),
+                                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Colors.grey)),
                               ),
                             ),
                           ),
@@ -311,11 +285,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                             onPressed: () {
                               String inputKey = _apiInputController.text.trim();
                               String inputUrl = _urlInputController.text.trim();
-
-                              if (inputKey.isEmpty) {
-                                inputKey = "1";
-                              }
-
+                              if (inputKey.isEmpty) inputKey = "1";
                               setState(() {
                                 _apiKeyAktif = inputKey;
                                 _urlAktif = inputUrl; 
@@ -333,13 +303,19 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               const SizedBox(height: 20),
 
               _isEngineRunning
-                  ? LiveTradingView(apiKey: _apiKeyAktif, baseUrl: _urlAktif) 
+                  ? LiveTradingView(
+                      apiKey: _apiKeyAktif, 
+                      baseUrl: _urlAktif,
+                      ticker: _activeTicker, 
+                      onTickerSearched: (String tickerBaru) {
+                        setState(() {
+                          _activeTicker = tickerBaru; 
+                        });
+                      },
+                    ) 
                   : Container(
                       height: 200,
-                      decoration: BoxDecoration(
-                        color: const Color(0xff1c2030),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                      decoration: BoxDecoration(color: const Color(0xff1c2030), borderRadius: BorderRadius.circular(12)),
                       child: const Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -365,16 +341,15 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // 🔥 KUNCI UTAMA: Menggunakan IndexedStack agar status chart dan mesin data tidak macet/berhenti saat pindah tab
       body: IndexedStack(
         index: _currentIndex,
         children: [
-          _buildDashboardPage(),       // 👈 Indeks 0: Halaman 1 (Dashboard)
-          const StockScreenerScreen(),  // 👈 Indeks 1: Halaman 2 (Screener)
+          _buildDashboardPage(),       
+          StockScreenerScreen(onStockSelected: _hubungkanKeDashboard),  
+          MarketRadarScreen(onStockSelected: _hubungkanKeDashboard), 
+          const StockCalculatorProScreen(), // 🔥 HALAMAN 4 VERSI UPGRADE PRO
         ],
       ),
-      
-      // 📱 MENU NAVIGASI BAWAH
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: const Color(0xff1c2030),
         selectedItemColor: const Color(0xff26a69a),
@@ -383,18 +358,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         type: BottomNavigationBarType.fixed,
         onTap: (int index) {
           setState(() {
-            _currentIndex = index; // Pindah tab halaman saat diklik
+            _currentIndex = index; 
           });
         },
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard_rounded),
-            label: 'Dashboard',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.analytics_rounded),
-            label: 'Screener',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.dashboard_rounded), label: 'Dashboard'),
+          BottomNavigationBarItem(icon: Icon(Icons.analytics_rounded), label: 'Screener'),
+          BottomNavigationBarItem(icon: Icon(Icons.radar_rounded), label: 'Radar'),
+          BottomNavigationBarItem(icon: Icon(Icons.calculate_rounded), label: 'Kalkulator Pro'),
         ],
       ),
     );
@@ -402,428 +373,299 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // =================================================================
-// 📈 2. MODUL LIVE VIEW & PROSES ANALISA ENGINE (VERSI URL DINAMIS)
+// MODUL INDIKATOR JEMBATAN LIVE (MOCK ENGINE)
 // =================================================================
 class LiveTradingView extends StatefulWidget {
-  final String apiKey;
-  final String baseUrl; 
-
-  const LiveTradingView({
-    super.key, 
-    required this.apiKey, 
-    required this.baseUrl, 
-  });
-
+  final String apiKey; final String baseUrl; final String ticker; final ValueChanged<String> onTickerSearched; 
+  const LiveTradingView({super.key, required this.apiKey, required this.baseUrl, required this.ticker, required this.onTickerSearched});
   @override
   State<LiveTradingView> createState() => _LiveTradingViewState();
 }
-
 class _LiveTradingViewState extends State<LiveTradingView> {
-  final FinanceEngineBridge _engine = FinanceEngineBridge();
   final StockStreamService _streamService = StockStreamService();
-
-  String _currentTicker = 'BBRI';
-  bool _isSearching = false;
-  final TextEditingController _searchController = TextEditingController();
-
   @override
-  void initState() {
-    super.initState();
-    _streamService.startStreaming(_currentTicker, widget.apiKey, widget.baseUrl);
-  }
-
+  void initState() { super.initState(); _streamService.startStreaming(widget.ticker, widget.apiKey, widget.baseUrl); }
   @override
   void didUpdateWidget(covariant LiveTradingView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.apiKey != widget.apiKey || oldWidget.baseUrl != widget.baseUrl) {
-      _streamService.startStreaming(_currentTicker, widget.apiKey, widget.baseUrl);
-    }
+    if (oldWidget.ticker != widget.ticker) _streamService.startStreaming(widget.ticker, widget.apiKey, widget.baseUrl);
   }
-
   @override
-  void dispose() {
-    _searchController.dispose();
-    _streamService.dispose();
-    super.dispose();
-  }
-
-  void _gantiSaham(String kodeBaru) {
-    if (kodeBaru.trim().isNotEmpty) {
-      setState(() {
-        _currentTicker = kodeBaru.toUpperCase().trim();
-        _isSearching = false;
-        _searchController.clear();
-        _streamService.startStreaming(_currentTicker, widget.apiKey, widget.baseUrl);
-      });
-    }
-  }
-
+  void dispose() { _streamService.dispose(); super.dispose(); }
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Card(
+    return StreamBuilder<List<CandleModel>>(
+      stream: _streamService.chartStream,
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data!.isEmpty) return const Center(child: CircularProgressIndicator());
+        final lastCandle = snapshot.data!.last;
+        return Card(
           color: const Color(0xff1c2030),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
-            child: Row(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
               children: [
-                Expanded(
-                  child: _isSearching
-                      ? TextField(
-                          controller: _searchController,
-                          autofocus: true,
-                          textInputAction: TextInputAction.search,
-                          decoration: const InputDecoration(
-                            hintText: 'Ketik kode saham... (e.g. BCIP, BBRI)',
-                            border: InputBorder.none,
-                            hintStyle: TextStyle(color: Colors.grey),
-                          ),
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                          onSubmitted: _gantiSaham,
-                        )
-                      : Text('Live Radar Engine: $_currentTicker', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                ),
-                IconButton(
-                  icon: Icon(_isSearching ? Icons.close : Icons.search, color: Colors.greenAccent),
-                  onPressed: () {
-                    setState(() {
-                      _isSearching = !_isSearching;
-                      if (!_isSearching) _searchController.clear();
-                    });
-                  },
-                ),
+                Text("KODE SAHAM LIVE: ${widget.ticker}", style: const TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 10),
+                Text("HARGA TERAKHIR: Rp${lastCandle.close.toStringAsFixed(0)}", style: const TextStyle(fontSize: 18, color: Colors.greenAccent)),
               ],
             ),
           ),
-        ),
-        const SizedBox(height: 10),
-
-        StreamBuilder<List<CandleModel>>(
-          stream: _streamService.chartStream,
-          builder: (context, snapshot) {
-            if (snapshot.hasError) {
-              return Container(
-                height: 200,
-                color: const Color(0xff1c2030),
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Text(
-                      "Gagal Memuat Data:\n${snapshot.error}",
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ),
-              );
-            }
-
-            if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(40.0),
-                  child: CircularProgressIndicator(color: Color(0xff26a69a)),
-                ),
-              );
-            }
-
-            final candleHistory = snapshot.data!;
-            final lastCandle = candleHistory.last;
-
-            final analisa = _engine.checkStockSignal(
-              close: lastCandle.close,
-              ema5: lastCandle.close * 0.992,
-              ema20: lastCandle.close * 0.985,
-              ema200: lastCandle.close * 0.95, 
-              rsi: 45.0,
-              vwap: lastCandle.close * 0.99,
-              adx: 30.0,
-              atr: lastCandle.close * 0.02, 
-            );
-
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Container(
-                  height: 300,
-                  decoration: BoxDecoration(
-                    color: const Color(0xff1c2030),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: KeyedSubtree(
-                    key: UniqueKey(),
-                    child: CandlestickChart(candles: candleHistory),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text("TICK RUNNING ($_currentTicker)", style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
-                      Text(
-                        "Rp${lastCandle.close.toStringAsFixed(0)}",
-                        style: TextStyle(
-                          fontSize: 22, 
-                          fontWeight: FontWeight.bold,
-                          color: lastCandle.close >= lastCandle.open ? const Color(0xff26a69a) : const Color(0xffef5350)
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Card(
-                  color: analisa.action == 1 
-                      ? const Color(0xff1b3a32) 
-                      : (analisa.action == -1 ? const Color(0xff3a1b1b) : const Color(0xff1f222e)),
-                  shape: RoundedRectangleBorder(
-                    side: BorderSide(
-                      color: analisa.action == 1 
-                          ? const Color(0xff26a69a) 
-                          : (analisa.action == -1 ? const Color(0xffef5350) : Colors.transparent), 
-                      width: 1.5
-                    ),
-                    borderRadius: BorderRadius.circular(12)
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Column(
-                      children: [
-                        Text(
-                          analisa.action == 1 
-                              ? "🟢 AUTO SIGNAL: BUY" 
-                              : (analisa.action == -1 ? "🔴 AUTO SIGNAL: AVOID / SELL" : "⚪ AUTO SIGNAL: HOLD / WAIT"),
-                          style: const TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 8),
-                        Text("Skor Indikator Gabungan: ${analisa.score} / 100", style: const TextStyle(color: Colors.grey)),
-                        const Divider(height: 30, color: Colors.grey),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            Column(
-                              children: [
-                                const Text("🛡️ AMANKAN STOP LOSS", style: TextStyle(color: Colors.redAccent, fontSize: 12)),
-                                const SizedBox(height: 5),
-                                Text(analisa.stopLoss > 0 ? "Rp${analisa.stopLoss.toStringAsFixed(0)}" : "-", style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                              ],
-                            ),
-                            Column(
-                              children: [
-                                const Text("🎯 TARGET TAKE PROFIT", style: TextStyle(color: Colors.greenAccent, fontSize: 12)),
-                                const SizedBox(height: 5),
-                                Text(analisa.takeProfit > 0 ? "Rp${analisa.takeProfit.toStringAsFixed(0)}" : "-", style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                              ],
-                            ),
-                          ],
-                        )
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
-      ],
+        );
+      },
     );
   }
 }
 
-class FinanceEngineBridge {
-  dynamic checkStockSignal({required double close, required double ema5, required double ema20, required double ema200, required double rsi, required double vwap, required double adx, required double atr}) {
-    return _MockAnalisa();
+// =================================================================
+// SCREENER & RADAR (HALAMAN 2 & 3)
+// =================================================================
+class StockScreenerScreen extends StatelessWidget {
+  final Function(String) onStockSelected;
+  const StockScreenerScreen({super.key, required this.onStockSelected});
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Top Filtered Stocks'), backgroundColor: const Color(0xff1c2030)),
+      body: ListTile(
+        title: const Text("BCIP", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        subtitle: const Text("Fast Trade / Scalping"),
+        trailing: const Text("Rp84"),
+        onTap: () => onStockSelected("BCIP"),
+      ),
+    );
   }
 }
-class _MockAnalisa {
-  int action = 0;
-  int score = 50;
-  double stopLoss = 0;
-  double takeProfit = 0;
+class MarketRadarScreen extends StatelessWidget {
+  final Function(String) onStockSelected;
+  const MarketRadarScreen({super.key, required this.onStockSelected});
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('IDX Market Radar'), backgroundColor: const Color(0xff1c2030)),
+      body: ListTile(
+        title: const Text("GOTO", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        subtitle: const Text("Top Volume Leaders"),
+        trailing: const Text("+9.5%"),
+        onTap: () => onStockSelected("GOTO"),
+      ),
+    );
+  }
 }
 
-// =================================================================
-// 📱 3. FITUR RADAR SCREENER DATA SAHAM (HALAMAN 2 KINI BISA DIBUKA)
-// =================================================================
-class ScreenedStockModel {
-  final int rank;
-  final String ticker;
-  final String name;
-  final double price;
-  final double changePercent;
-  final int score;
-  final String strategyTag;
-
-  ScreenedStockModel({
-    required this.rank,
-    required this.ticker,
-    required this.name,
-    required this.price,
-    required this.changePercent,
-    required this.score,
-    required this.strategyTag,
-  });
-}
-
-class StockScreenerScreen extends StatefulWidget {
-  const StockScreenerScreen({super.key});
+// ====================================================================
+// 🔥 HALAMAN 4: REKAYASA TOTAL KLONINGAN KALKULATOR SAHAM PRO BEI
+// ====================================================================
+class StockCalculatorProScreen extends StatefulWidget {
+  const StockCalculatorProScreen({super.key});
 
   @override
-  State<StockScreenerScreen> createState() => _StockScreenerScreenState();
+  State<StockCalculatorProScreen> createState() => _StockCalculatorProScreenState();
 }
 
-class _StockScreenerScreenState extends State<StockScreenerScreen> {
-  final List<ScreenedStockModel> _allStocks = [
-    ScreenedStockModel(rank: 1, ticker: 'BCIP', name: 'Bumi Citra Permai Tbk', price: 84, changePercent: 14.2, score: 95, strategyTag: 'Fast Trade / Scalping'),
-    ScreenedStockModel(rank: 2, ticker: 'BRIS', name: 'Bank Syariah Indonesia Tbk', price: 2540, changePercent: 6.8, score: 89, strategyTag: 'Volume Spike Breakout'),
-    ScreenedStockModel(rank: 3, ticker: 'ANTM', name: 'Aneka Tambang Tbk', price: 1620, changePercent: 4.5, score: 82, strategyTag: 'EMA Cross Uptrend'),
-    ScreenedStockModel(rank: 4, ticker: 'BBRI', name: 'Bank Rakyat Indonesia Tbk', price: 5225, changePercent: 1.8, score: 78, strategyTag: 'Buy on Weakness'),
-    ScreenedStockModel(rank: 5, ticker: 'TLKM', name: 'Telkom Indonesia Tbk', price: 3640, changePercent: -0.5, score: 65, strategyTag: 'Sideways Testing Support'),
-  ];
+class _StockCalculatorProScreenState extends State<StockCalculatorProScreen> {
+  // Controller Global Fee Sekuritas
+  final _feeBuyGlobalCtrl = TextEditingController(text: "0.15");
+  final _feeSellGlobalCtrl = TextEditingController(text: "0.25");
 
-  final TextEditingController _screenerSearchController = TextEditingController();
-  String _searchKeyword = "";
-  String _selectedStrategyGroup = "ALL"; 
+  // Sub-Tab 1: Profit & Loss (Cuan Net)
+  final _pnlBuyPriceCtrl = TextEditingController();
+  final _pnlSellPriceCtrl = TextEditingController();
+  final _pnlLotCtrl = TextEditingController();
+  String _pnlResult = "Masukkan data transaksi untuk menghitung cuan bersih.";
+
+  // Sub-Tab 2: Average Down / Up
+  final _avgPrice1Ctrl = TextEditingController();
+  final _avgLot1Ctrl = TextEditingController();
+  final _avgPrice2Ctrl = TextEditingController();
+  final _avgLot2Ctrl = TextEditingController();
+  String _avgResult = "Masukkan riwayat jemputan muatan harga lama & baru.";
+
+  // Sub-Tab 3: Target Trading Plan (TP / CL)
+  final _planBuyPriceCtrl = TextEditingController();
+  final _planTargetProfitCtrl = TextEditingController(text: "5.0");
+  final _planCutLossCtrl = TextEditingController(text: "2.0");
+  String _planResult = "Masukkan modal entrian untuk membuat peta trading plan.";
+
+  // Sub-Tab 4: Hitung Daya Beli Dana Maksimal Lot
+  final _cashAvailableCtrl = TextEditingController();
+  final _cashStockPriceCtrl = TextEditingController();
+  String _cashResult = "Masukkan nilai modal tunai untuk melihat batas lot belanja.";
 
   @override
   void dispose() {
-    _screenerSearchController.dispose();
+    _feeBuyGlobalCtrl.dispose(); _feeSellGlobalCtrl.dispose();
+    _pnlBuyPriceCtrl.dispose(); _pnlSellPriceCtrl.dispose(); _pnlLotCtrl.dispose();
+    _avgPrice1Ctrl.dispose(); _avgLot1Ctrl.dispose(); _avgPrice2Ctrl.dispose(); _avgLot2Ctrl.dispose();
+    _planBuyPriceCtrl.dispose(); _planTargetProfitCtrl.dispose(); _planCutLossCtrl.dispose();
+    _cashAvailableCtrl.dispose(); _cashStockPriceCtrl.dispose();
     super.dispose();
+  }
+
+  // LOGIKA 1: UNTUNG / RUGI NET
+  void _prosesHitungPnL() {
+    double buy = double.tryParse(_pnlBuyPriceCtrl.text) ?? 0;
+    double sell = double.tryParse(_pnlSellPriceCtrl.text) ?? 0;
+    double lot = double.tryParse(_pnlLotCtrl.text) ?? 0;
+    double fB = (double.tryParse(_feeBuyGlobalCtrl.text) ?? 0.15) / 100;
+    double fS = (double.tryParse(_feeSellGlobalCtrl.text) ?? 0.25) / 100;
+
+    if (buy == 0 || sell == 0 || lot == 0) return;
+
+    double grossBuy = buy * lot * 100;
+    double feeBeli = grossBuy * fB;
+    double totalModal = grossBuy + feeBeli;
+
+    double grossSell = sell * lot * 100;
+    double feeJual = grossSell * fS;
+    double totalTerima = grossSell - feeJual;
+
+    double netCuan = totalTerima - totalModal;
+    double roi = (netCuan / totalModal) * 100;
+
+    setState(() {
+      _pnlResult = "💵 HASIL TRANSAKSI NET:\n"
+          "• Nilai Bersih: Rp${netCuan.toStringAsFixed(0)} (${netCuan >= 0 ? 'CUAN' : 'LOSS'})\n"
+          "• Persentase ROI: ${roi.toStringAsFixed(2)}%\n\n"
+          "🏢 RINCIAN BIAYA BURSA:\n"
+          "• Total Keluar Modal: Rp${totalModal.toStringAsFixed(0)}\n"
+          "• Total Terima Dana Jual: Rp${totalTerima.toStringAsFixed(0)}\n"
+          "• Fee Broker Beli: Rp${feeBeli.toStringAsFixed(0)}\n"
+          "• Fee Broker Jual + PPh: Rp${feeJual.toStringAsFixed(0)}";
+    });
+  }
+
+  // LOGIKA 2: AVERAGE DOWN
+  void _prosesHitungAvg() {
+    double p1 = double.tryParse(_avgPrice1Ctrl.text) ?? 0;
+    double l1 = double.tryParse(_avgLot1Ctrl.text) ?? 0;
+    double p2 = double.tryParse(_avgPrice2Ctrl.text) ?? 0;
+    double l2 = double.tryParse(_avgLot2Ctrl.text) ?? 0;
+
+    if (l1 + l2 == 0) return;
+
+    double totalDana = (p1 * l1 * 100) + (p2 * l2 * 100);
+    double totalLot = l1 + l2;
+    double avgHarga = totalDana / (totalLot * 100);
+
+    setState(() {
+      _avgResult = "🎚️ KEPEMILIKAN BARU:\n"
+          "• Harga Rata-Rata Baru: Rp${avgHarga.toStringAsFixed(1)}\n"
+          "• Total Volume: ${totalLot.toStringAsFixed(0)} Lot\n"
+          "• Total Modal Tertanam: Rp${totalDana.toStringAsFixed(0)}";
+    });
+  }
+
+  // LOGIKA 3: TRADING PLAN TARGET HARGA
+  void _prosesHitungPlan() {
+    double buy = double.tryParse(_planBuyPriceCtrl.text) ?? 0;
+    double tpPct = (double.tryParse(_planTargetProfitCtrl.text) ?? 5.0) / 100;
+    double clPct = (double.tryParse(_planCutLossCtrl.text) ?? 2.0) / 100;
+
+    if (buy == 0) return;
+
+    double targetTP = buy * (1 + tpPct);
+    double targetCL = buy * (1 - clPct);
+
+    setState(() {
+      _planResult = "🎯 PETA TRADING PLAN (ENTRY Rp${buy.toStringAsFixed(0)}):\n"
+          "• Target Take Profit: Pasang Jual di Rp${targetTP.toStringAsFixed(0)}\n"
+          "• Batas Stop Loss / CL: Buang di Rp${targetCL.toStringAsFixed(0)}\n"
+          "• Risk/Reward Ratio: 1 : ${(tpPct/clPct).toStringAsFixed(1)}";
+    });
+  }
+
+  // LOGIKA 4: DAYA BELI MAKSIMAL LOT
+  void _prosesHitungDayaBeli() {
+    double cash = double.tryParse(_cashAvailableCtrl.text) ?? 0;
+    double price = double.tryParse(_cashStockPriceCtrl.text) ?? 0;
+    double fB = (double.tryParse(_feeBuyGlobalCtrl.text) ?? 0.15) / 100;
+
+    if (cash == 0 || price == 0) return;
+
+    // Rumus: Harga per lot termasuk fee sekuritas
+    double hargaPerLotBersih = (price * 100) * (1 + fB);
+    double maxLot = (cash / hargaPerLotBersih).floorToDouble();
+    double totalBelanja = maxLot * hargaPerLotBersih;
+    double sisaCash = cash - totalBelanja;
+
+    setState(() {
+      _cashResult = "🛍️ MAKSIMAL PEMBELIAN:\n"
+          "• Bisa Borong: ${maxLot.toStringAsFixed(0)} Lot\n"
+          "• Total Nota Belanja: Rp${totalBelanja.toStringAsFixed(0)}\n"
+          "• Sisa Kembalian Tunai: Rp${sisaCash.toStringAsFixed(0)}";
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final filteredResults = _allStocks.where((ScreenedStockModel stock) {
-      final matchesKeyword = stock.ticker.toLowerCase().contains(_searchKeyword.toLowerCase()) ||
-                             stock.name.toLowerCase().contains(_searchKeyword.toLowerCase());
-
-      if (_selectedStrategyGroup == "ALL") {
-        return matchesKeyword;
-      } else if (_selectedStrategyGroup == "SCALPING") {
-        return matchesKeyword && stock.strategyTag.contains("Fast Trade");
-      } else if (_selectedStrategyGroup == "BREAKOUT") {
-        return matchesKeyword && stock.strategyTag.contains("Breakout");
-      } else if (_selectedStrategyGroup == "UPTREND") {
-        return matchesKeyword && stock.strategyTag.contains("Uptrend");
-      }
-      return matchesKeyword;
-    }).toList();
-
-    return Scaffold(
-      backgroundColor: const Color(0xff161a25),
-      appBar: AppBar(
-        title: const Text('Top Filtered Stocks Today', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        backgroundColor: const Color(0xff1c2030),
-        centerTitle: true,
-        automaticallyImplyLeading: false, // Menghapus panah back karena ini halaman utama tab 2
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return DefaultTabController(
+      length: 4,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Kalkulator Saham Pro IDX', style: TextStyle(fontWeight: FontWeight.bold)),
+          backgroundColor: const Color(0xff1c2030),
+          automaticallyImplyLeading: false,
+          bottom: const TabBar(
+            isScrollable: true,
+            indicatorColor: Color(0xff26a69a),
+            tabs: [
+              Tab(icon: Icon(Icons.monetization_on_rounded), text: 'Cuan Net (P&L)'),
+              Tab(icon: Icon(Icons.layers_rounded), text: 'Average Down'),
+              Tab(icon: Icon(Icons.gps_fixed_rounded), text: 'Trading Plan'),
+              Tab(icon: Icon(Icons.account_balance_wallet_rounded), text: 'Daya Beli Lot'),
+            ],
+          ),
+        ),
+        body: Column(
           children: [
-            TextField(
-              controller: _screenerSearchController,
-              style: const TextStyle(color: Colors.white),
-              onChanged: (value) {
-                setState(() {
-                  _searchKeyword = value;
-                });
-              },
-              decoration: InputDecoration(
-                labelText: 'Cari hasil filteran harian...',
-                labelStyle: const TextStyle(color: Colors.grey),
-                suffixIcon: const Icon(Icons.search, color: Colors.greenAccent),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                filled: true,
-                fillColor: const Color(0xff1f222e),
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
+            // BAR SETTING FEE SEKURITAS GLOBAL (Ciri Khas Aplikasi Pro)
+            Container(
+              color: const Color(0xff1f222e),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
                 children: [
-                  _buildFilterChip("ALL", "Semua Radar"),
-                  _buildFilterChip("SCALPING", "⚡ Fast Trade"),
-                  _buildFilterChip("BREAKOUT", "🔥 Breakout"),
-                  _buildFilterChip("UPTREND", "📈 Uptrend"),
+                  const Icon(Icons.settings_applications, color: Colors.grey, size: 20),
+                  const SizedBox(width: 8),
+                  const Text("Setting Broker Fee: ", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                  const Spacer(),
+                  SizedBox(
+                    width: 70,
+                    height: 30,
+                    child: TextField(
+                      controller: _feeBuyGlobalCtrl,
+                      keyboardType: TextInputType.number,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                      decoration: const InputDecoration(contentPadding: EdgeInsets.zero, labelText: "Fee Beli %", border: OutlineInputBorder()),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    width: 70,
+                    height: 30,
+                    child: TextField(
+                      controller: _feeSellGlobalCtrl,
+                      keyboardType: TextInputType.number,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                      decoration: const InputDecoration(contentPadding: EdgeInsets.zero, labelText: "Fee Jual %", border: OutlineInputBorder()),
+                    ),
+                  ),
                 ],
               ),
             ),
-            const SizedBox(height: 15),
-
+            
+            // MAIN CONTENT VIEW TAB
             Expanded(
-              child: filteredResults.isEmpty
-                  ? const Center(child: Text('Saham tidak ditemukan dalam radar harian ini.', style: TextStyle(color: Colors.white)))
-                  : ListView.builder(
-                      itemCount: filteredResults.length,
-                      itemBuilder: (context, index) {
-                        final stock = filteredResults[index];
-                        bool isPositive = stock.changePercent >= 0;
-
-                        return Card(
-                          color: const Color(0xff1f222e),
-                          margin: const EdgeInsets.symmetric(vertical: 6),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          child: ListTile(
-                            onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Mengalihkan analisa ke ${stock.ticker}'), duration: const Duration(seconds: 1)),
-                              );
-                            },
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            leading: CircleAvatar(
-                              backgroundColor: stock.score >= 90 ? const Color(0xff26a69a) : Colors.grey[800],
-                              child: Text('${stock.score}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                            ),
-                            title: Row(
-                              children: [
-                                Text(stock.ticker, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white)),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: SingleChildScrollView(
-                                    scrollDirection: Axis.horizontal,
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: Colors.blueGrey.withOpacity(0.3),
-                                        borderRadius: BorderRadius.circular(4)
-                                      ),
-                                      child: Text(stock.strategyTag, style: const TextStyle(fontSize: 10, color: Colors.cyanAccent)),
-                                    ),
-                                  ),
-                                )
-                              ],
-                            ),
-                            subtitle: Padding(
-                              padding: const EdgeInsets.only(top: 4.0), 
-                              child: Text(stock.name, style: const TextStyle(color: Colors.grey, fontSize: 12), overflow: TextOverflow.ellipsis),
-                            ),
-                            trailing: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text("Rp${stock.price.toStringAsFixed(0)}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
-                                const SizedBox(height: 4),
-                                Text(
-                                  "${isPositive ? '+' : ''}${stock.changePercent.toStringAsFixed(1)}%",
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13,
-                                    color: isPositive ? const Color(0xff26a69a) : const Color(0xffef5350),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
+              child: TabBarView(
+                children: [
+                  _buildPnlTab(),
+                  _buildAverageDownTab(),
+                  _buildTradingPlanTab(),
+                  _buildDayaBeliTab(),
+                ],
+              ),
             ),
           ],
         ),
@@ -831,21 +673,161 @@ class _StockScreenerScreenState extends State<StockScreenerScreen> {
     );
   }
 
-  Widget _buildFilterChip(String groupKey, String label) {
-    bool isSelected = _selectedStrategyGroup == groupKey;
-    return Padding(
-      padding: const EdgeInsets.only(right: 8.0),
-      child: ChoiceChip(
-        label: Text(label),
-        selected: isSelected,
-        selectedColor: const Color(0xff26a69a),
-        backgroundColor: const Color(0xff1f222e),
-        labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.grey, fontWeight: FontWeight.bold, fontSize: 12),
-        onSelected: (bool selected) {
-          setState(() {
-            _selectedStrategyGroup = selected ? groupKey : "ALL";
-          });
-        },
+  // TAB VIEW 1: PROFIT LOSS
+  Widget _buildPnlTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildInputCard("KALKULATOR UNTUNG / RUGI BERSIH", [
+            _buildTextField(_pnlBuyPriceCtrl, "Harga Beli Per Saham (Rp)"),
+            const SizedBox(height: 10),
+            _buildTextField(_pnlSellPriceCtrl, "Harga Jual Per Saham (Rp)"),
+            const SizedBox(height: 10),
+            _buildTextField(_pnlLotCtrl, "Jumlah Muatan Belanja (Lot)"),
+          ]),
+          const SizedBox(height: 12),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xff26a69a), padding: const EdgeInsets.symmetric(vertical: 14)),
+            onPressed: _prosesHitungPnL,
+            child: const Text("🔥 HITUNG HASIL BERSIH", style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(height: 15),
+          _buildResultCard(_pnlResult),
+        ],
+      ),
+    );
+  }
+
+  // TAB VIEW 2: AVERAGE DOWN
+  Widget _buildAverageDownTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildInputCard("NOTAL BELI PERTAMA (POSISI LAMA)", [
+            _buildTextField(_avgPrice1Ctrl, "Harga Beli Pertama (Rp)"),
+            const SizedBox(height: 8),
+            _buildTextField(_avgLot1Ctrl, "Volume Lot Lama"),
+          ]),
+          const SizedBox(height: 12),
+          _buildInputCard("NOTA BELI KEDUA (AVERAGE DOWN)", [
+            _buildTextField(_avgPrice2Ctrl, "Harga Beli Kedua / Baru (Rp)"),
+            const SizedBox(height: 8),
+            _buildTextField(_avgLot2Ctrl, "Volume Lot Tambahan Baru"),
+          ]),
+          const SizedBox(height: 15),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xff26a69a), padding: const EdgeInsets.symmetric(vertical: 14)),
+            onPressed: _prosesHitungAvg,
+            child: const Text("🎚️ SIMULASIKAN HARGA RATA-RATA", style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(height: 15),
+          _buildResultCard(_avgResult),
+        ],
+      ),
+    );
+  }
+
+  // TAB VIEW 3: TRADING PLAN
+  Widget _buildTradingPlanTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildInputCard("TARGET PRICE MANAGEMENT", [
+            _buildTextField(_planBuyPriceCtrl, "Harga Modal Pembelian Beli (Rp)"),
+            const SizedBox(height: 10),
+            _buildTextField(_planTargetProfitCtrl, "Target Take Profit (%)"),
+            const SizedBox(height: 10),
+            _buildTextField(_planCutLossCtrl, "Batas Toleransi Cut Loss (%)"),
+          ]),
+          const SizedBox(height: 15),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xff26a69a), padding: const EdgeInsets.symmetric(vertical: 14)),
+            onPressed: _prosesHitungPlan,
+            child: const Text("🎯 CETAK AUTOMATIC TRADING PLAN", style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(height: 15),
+          _buildResultCard(_planResult),
+        ],
+      ),
+    );
+  }
+
+  // TAB VIEW 4: DAYA BELI LOT
+  Widget _buildDayaBeliTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildInputCard("MONEY MANAGEMENT (BUYING POWER)", [
+            _buildTextField(_cashAvailableCtrl, "Sisa Uang Dingin Tunai di RDI (Rp)"),
+            const SizedBox(height: 10),
+            _buildTextField(_cashStockPriceCtrl, "Harga Emiten Saham Target (Rp)"),
+          ]),
+          const SizedBox(height: 15),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xff26a69a), padding: const EdgeInsets.symmetric(vertical: 14)),
+            onPressed: _prosesHitungDayaBeli,
+            child: const Text("🛍️ CEK MAKSIMAL LOT", style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(height: 15),
+          _buildResultCard(_cashResult),
+        ],
+      ),
+    );
+  }
+
+  // UTILS WIDGET BUILDER UNTUK KESERAGAMAN TEMA UI DARK
+  Widget _buildInputCard(String title, List<Widget> children) {
+    return Card(
+      color: const Color(0xff1f222e),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      child: Padding(
+        padding: const EdgeInsets.all(14.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
+            const SizedBox(height: 10),
+            ...children
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextField(TextEditingController ctrl, String label) {
+    return TextField(
+      controller: ctrl,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      style: const TextStyle(fontSize: 14, color: Colors.white),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(color: Colors.white60, fontSize: 13),
+        filled: true,
+        fillColor: const Color(0xff131722),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      ),
+    );
+  }
+
+  Widget _buildResultCard(String content) {
+    return Card(
+      color: const Color(0xff1c2030),
+      shape: RoundedRectangleBorder(side: const BorderSide(color: Color(0xff26a69a), width: 1.2), borderRadius: BorderRadius.circular(10)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Text(
+          content,
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, height: 1.6, color: Colors.greenAccent),
+        ),
       ),
     );
   }
