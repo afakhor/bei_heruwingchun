@@ -74,3 +74,47 @@ class FinanceEngineBridge {
     return _evaluateStockSignal(close, ema5, ema20, ema200, rsi, vwap, adx, atr);
   }
 }
+
+// ====================================================================
+// 🔥 TARUH DI SINI, BOSSKU! (Fungsi luar Class / Top-Level Function)
+// ====================================================================
+/// Fungsi ini dirancang khusus untuk berjalan di Isolate terpisah via `compute()`.
+/// Menerima List Map mentah dari server, memfilternya pakai C++, dan mengembalikan data yang lolos screening.
+List<Map<String, dynamic>> cPlusPlusBulkScreening(List<Map<String, dynamic>> rawStocks) {
+  // Inisialisasi bridge baru di dalam Isolate ini
+  final bridge = FinanceEngineBridge();
+  List<Map<String, dynamic>> buySignals = [];
+
+  for (var stock in rawStocks) {
+    try {
+      // Hitung sinyal via FFI C++ secara estafet
+      final result = bridge.checkStockSignal(
+        close: (stock['close'] as num).toDouble(),
+        ema5: (stock['ema5'] as num).toDouble(),
+        ema20: (stock['ema20'] as num).toDouble(),
+        ema200: (stock['ema200'] as num).toDouble(),
+        rsi: (stock['rsi'] as num).toDouble(),
+        vwap: (stock['vwap'] as num).toDouble(),
+        adx: (stock['adx'] as num).toDouble(),
+        atr: (stock['atr'] as num).toDouble(),
+      );
+
+      // Hanya masukkan saham yang menghasilkan sinyal BUY (1) menurut C++
+      if (result.action == 1) {
+        // Gandakan map asli dan suntikkan data kalkulasi dari mesin C++
+        final Map<String, dynamic> verifiedStock = Map.from(stock);
+        verifiedStock['score'] = result.score;
+        verifiedStock['action'] = result.action;
+        verifiedStock['stop_loss'] = result.stopLoss;
+        verifiedStock['take_profit'] = result.takeProfit;
+
+        buySignals.add(verifiedStock);
+      }
+    } catch (e) {
+      // Jika ada satu emiten bermasalah datanya, skip ke saham berikutnya
+      continue;
+    }
+  }
+
+  return buySignals;
+}
