@@ -26,11 +26,10 @@ class StockStreamService {
   final StreamController<List<CandleModel>> _chartStreamController = 
       StreamController<List<CandleModel>>.broadcast();
 
-  Timer? _pollingTimer; // 🔥 Mesin penggerak live update (polling)
+  Timer? _pollingTimer; // Mesin penggerak live update (polling)
 
   Stream<List<CandleModel>> get chartStream => _chartStreamController.stream;
 
-  // 🔥 Ditambahkan opsional parameter 'timeframe', default-nya 'month' sesuai Flask
   void startStreaming(String ticker, String apiKey, String baseUrl, {String timeframe = 'month'}) async {
     // 🛡️ Bersihkan timer lama jika user mengganti emiten (pindah saham)
     _pollingTimer?.cancel();
@@ -47,10 +46,17 @@ class StockStreamService {
     // 📥 FUNGSI INTERNAL UNTUK TEMBAK API
     Future<void> fetchCandlesCore() async {
       try {
-        // 🎯 PERBAIKAN URL: Sekarang akurat mengarah ke /api/candles/TICKER?tf=timeframe
         final url = Uri.parse('$cleanUrl/api/candles/$targetTicker?tf=$timeframe');
 
-        final response = await http.get(url);
+        // 🔥 OPSI A: Mengirim API Key secara aman via HTTP Headers
+        final response = await http.get(
+          url,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $apiKey', // Standar token Bearer
+            // Jika di Flask kamu memakai custom header, bisa ganti jadi: 'X-API-KEY': apiKey
+          },
+        );
 
         if (response.statusCode == 200) {
           final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
@@ -87,14 +93,13 @@ class StockStreamService {
     // 1. Jalankan tembakan pertama langsung saat fungsi dipanggil
     await fetchCandlesCore();
 
-    // 2. 🔥 NYALAKAN POMPA DATA: Ambil data otomatis setiap 3 detik (bisa kamu sesuaikan)
-    // Ini taktik paling aman untuk scalping memanfaatkan server PythonAnywhere gratisan
+    // 2. NYALAKAN POMPA DATA: Ambil data otomatis setiap 3 detik
     _pollingTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
       await fetchCandlesCore();
     });
   }
 
-  // 🔥 Fungsi untuk mematikan pompa data saat user keluar dari mode live trading
+  // Fungsi untuk mematikan pompa data saat user keluar dari mode live trading
   void stopStreaming() {
     _pollingTimer?.cancel();
   }
