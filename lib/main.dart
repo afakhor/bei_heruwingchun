@@ -1112,29 +1112,49 @@ class _StockCalculatorProScreenState extends State<StockCalculatorProScreen> {
     });
 
     try {
-      String cleanUrl = widget.baseUrl.trim();
-      if (cleanUrl.endsWith('/')) {
-        cleanUrl = cleanUrl.substring(0, cleanUrl.length - 1);
+      // 🎯 LOGIKA PEMBERSIH URL:
+      // Kita ambil baseUrl, lalu hapus '/v1/idx' jika ada, agar kembali ke root domain
+      String rootUrl = widget.baseUrl.replaceAll('/v1/idx', '');
+      if (rootUrl.endsWith('/')) {
+        rootUrl = rootUrl.substring(0, rootUrl.length - 1);
       }
 
-      // 🎯 Tembak langsung ke server tanpa gembok headers
-      final response = await http.get(
-        Uri.parse('$cleanUrl/api/price?ticker=$ticker'),
-      ).timeout(const Duration(seconds: 5));
+      // Gabungkan dengan endpoint yang benar
+      final url = Uri.parse('$rootUrl/api/price?ticker=$ticker');
+
+      final response = await http.get(url).timeout(const Duration(seconds: 5));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        double price = (data['price'] ?? data['close'] ?? 0.0).toDouble();
+        double price = (data['price'] ?? 0.0).toDouble();
 
         if (price > 0) {
           setState(() {
-            // 🔥 Auto-Complete menyuntik semua kolom harga di seluruh Tab!
+            // 🔥 Auto-Complete data
             _pnlBuyPriceCtrl.text = price.toStringAsFixed(0);
             _avgPrice2Ctrl.text = price.toStringAsFixed(0);
             _planBuyPriceCtrl.text = price.toStringAsFixed(0);
             _cashStockPriceCtrl.text = price.toStringAsFixed(0);
             _searchStatus = "🟢 Ticker $ticker Berhasil Masuk: Rp${price.toStringAsFixed(0)}";
           });
+
+          // Pemicu kalkulasi ulang
+          _prosesHitungPnL();
+          _prosesHitungAvg();
+          _prosesHitungPlan();
+          _prosesHitungDayaBeli();
+        } else {
+          setState(() => _searchStatus = "⚠️ Saham $ticker tidak ditemukan di bursa.");
+        }
+      } else {
+        setState(() => _searchStatus = "❌ Server error: ${response.statusCode}");
+      }
+    } catch (e) {
+      setState(() => _searchStatus = "❌ Gagal konek: $e");
+    } finally {
+      setState(() => _isFetchingPrice = false);
+    }
+}
           
           // Picu ulang kalkulasi otomatis setelah auto-fill data baru
           _prosesHitungPnL();
