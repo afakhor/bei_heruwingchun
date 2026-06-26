@@ -195,10 +195,70 @@ def get_ticker_candles(ticker):
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+# 🎯 ENDPOINT REVISI HALAMAN 2 (PLONG & TANPA DUMMY)
+@app.route('/api/screener-raw', methods=['GET'])
+def get_screener_raw_data():
+    try:
+        # 🔥 PIPA REAL-TIME: Panggil fungsi scraper asli atau loop DB data saham harianmu
+        # Ganti 'ambil_seluruh_data_screener_idx' dengan fungsi scraper/DB indikator aslimu
+        list_seluruh_saham = ambil_seluruh_data_screener_idx()
+
+        if not list_seluruh_saham:
+            return jsonify({"error": "Gagal menarik data mentah screener dari bursa"}), 404
+
+        # Kirim data mentah indikator ke Isolate C++ di Flutter untuk di-screening ketat
+        return jsonify({"stocks_data": list_seluruh_saham})
+
+    except Exception as e:
+        return jsonify({"error": f"Gagal mengambil data live screener: {str(e)}"}), 500
+
+# 🎯 ENDPOINT REVISI HALAMAN 3 (PLONG & REAL-TIME)
+@app.route('/api/market-radar', methods=['GET'])
+def get_market_radar():
+    try:
+        # 🔥 PIPA REAL-TIME: Panggil fungsi scraper klasemen bursa atau query DB aslimu di sini
+        # Pastikan return format dari fungsi ini menghasilkan dictionary terstruktur (gainers, losers, market_caps)
+        radar_data = ambil_data_market_radar_realtime_idx()
+
+        if not radar_data:
+            return jsonify({"error": "Gagal menarik data radar klasemen bursa"}), 404
+
+        return jsonify(radar_data)
+
+    except Exception as e:
+        return jsonify({"error": f"Gagal mengambil data live radar bursa: {str(e)}"}), 500
+
+# 🎯 ENDPOINT REVISI HALAMAN 4 (PLONG & REAL-TIME)
+@app.route('/api/price', methods=['GET'])
+def get_single_stock_price():
+    # 🔍 Langsung tangkap kode saham (ticker) tanpa cek API Key
+    ticker = request.args.get('ticker', '').upper()
+    if not ticker:
+        return jsonify({"error": "Ticker tidak boleh kosong!"}), 400
+
+    try:
+        # 🔥 PIPA REAL-TIME: Langsung panggil fungsi scraper atau query DB asli milikmu
+        # Pastikan nama fungsi 'ambil_harga_terupdate_idx' sesuai dengan fungsi Halaman 1-mu
+        harga_final = ambil_harga_terupdate_idx(ticker)
+
+        # Validasi jika data gagal ditarik atau emiten tidak ditemukan
+        if not harga_final or harga_final == 0:
+            return jsonify({"error": f"Saham {ticker} tidak ditemukan atau gagal di-scrape"}), 404
+
+        return jsonify({
+            "ticker": ticker,
+            "price": float(harga_final) # Return angka real-time langsung ke Flutter
+        })
+
+    except Exception as e:
+        return jsonify({"error": f"Gagal mengambil data live dari bursa: {str(e)}"}), 500
+
+
+ ####🔎🔎🔎🔎app.route server nyala apa tidak heruwingchun/pythonanywhere.com
 @app.route('/')
 def cek_status():
     return {"status": "Server Python Hidup dan Lancar Jaya!", "code": 200}
-
 
 
 if __name__ == '__main__':
