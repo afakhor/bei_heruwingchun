@@ -9,12 +9,214 @@ import 'candlestick_chart.dart';
 import 'dart:math';
 
 void main() {
-  runApp(const MaterialApp(
-    home: MainNavigationScreen(),
-    debugShowCheckedModeBanner: false,
-  ));
+  runApp(const MyApp());
 }
 
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      theme: ThemeData.dark(),
+      debugShowCheckedModeBanner: false,
+      home: const SplashScreen(),
+    );
+  }
+}
+
+// =================================================================
+// WIDGET SPLASH SCREEN MURNI OTOMATIS (EFEK RADAR SEPUSAT & PRESISI)
+// =================================================================
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<Alignment> _alignmentAnimation;
+
+  // Mesin animasi untuk efek gelombang kejut otomatis
+  late AnimationController _rippleController;
+
+  bool _isAtCenter = false; 
+  bool _isClicked = false; 
+
+  @override
+  void initState() {
+    super.initState();
+
+    // 1. Animasi pergerakan ikon mendarat (2 Detik)
+    _controller = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    );
+
+    // 2. Animasi efek kejut/radar otomatis (700ms)
+    _rippleController = AnimationController(
+      duration: const Duration(milliseconds: 700),
+      vsync: this,
+    );
+
+    // 🔥 KITA KUNCI: Titik akhir (end) wajib mendarat di Alignment.center (0.0, 0.0)
+    _alignmentAnimation = Tween<Alignment>(
+      begin: const Alignment(2.2 , 3.2), 
+      end: Alignment.center, 
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Curves.fastOutSlowIn, 
+    ));
+
+    // Pemicu Otomatis saat gerakan mendarat selesai
+    _controller.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        if (mounted) {
+          setState(() {
+            _isAtCenter = true; 
+            _isClicked = true; 
+          });
+          _rippleController.forward(); // 💥 Jalankan radar otomatis
+        }
+      }
+    });
+
+    // Pindah halaman otomatis setelah efek radar selesai memudar
+    _rippleController.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const MainNavigationScreen()), 
+          );
+        }
+      }
+    });
+
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _rippleController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF7F00FF), 
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF7F00FF),
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        title: const Text(
+          'PORTO HERU WINGCHUN',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w500, fontSize: 20),
+        ),
+      ),
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: Image.asset(
+              'assets/images/splash.png', 
+              fit: BoxFit.cover,       
+            ),
+          ),
+
+          // LAPISAN EFEK: Menggambar garis radar melingkar otomatis di tengah-tengah
+          if (_isClicked)
+            AnimatedBuilder(
+              animation: _rippleController,
+              builder: (context, child) {
+                return Center(
+                  child: CustomPaint(
+                    painter: ShockwavePainter(progress: _rippleController.value),
+                    size: const Size(200, 200),
+                  ),
+                );
+              },
+            ),
+
+          // LAPISAN UTAMA: Pergerakan Icon Alat (Murni Visual Otomatis)
+          AnimatedBuilder(
+            animation: _alignmentAnimation,
+            builder: (context, child) {
+              return Align(
+                alignment: _alignmentAnimation.value,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300), 
+                  transitionBuilder: (Widget child, Animation<double> animation) {
+                    return ScaleTransition(scale: animation, child: child);
+                  },
+                  child: _isAtCenter
+                      ? AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          // 🔥 KUNCI KEDUA: Paksa transformasi Matrix skala menyusut tepat di as tengah teks
+                          transformAlignment: Alignment.center, 
+                          transform: Matrix4.identity()..scale(_isClicked ? 0.85 : 1.0),
+                          child: const Text(
+                            '👆',
+                            key: ValueKey('finger_icon'),
+                            style: TextStyle(fontSize: 60), 
+                          ),
+                        )
+                      : const Text(
+                          '🪂',
+                          key: ValueKey('tools_icon'),
+                          style: TextStyle(fontSize: 85), 
+                        ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// =================================================================
+// PELUKIS GELOMBANG KEJUT (SHOCKWAVE RADAR PAINTER)
+// =================================================================
+class ShockwavePainter extends CustomPainter {
+  final double progress;
+  ShockwavePainter({required this.progress});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+
+    // Ring 1: Gelombang Kejut Utama (Warna Hijau Trading)
+    final paint1 = Paint()
+      ..color = const Color(0xff26a69a).withOpacity(1.0 - progress) 
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4.0 * (1.0 - progress); 
+
+    double radius1 = progress * 130; 
+    canvas.drawCircle(center, radius1, paint1);
+
+    // Ring 2: Gelombang Lapisan Kedua (Warna Cyan Listrik)
+    if (progress > 0.2) {
+      final progress2 = (progress - 0.2) / 0.8;
+      final paint2 = Paint()
+        ..color = Colors.cyanAccent.withOpacity(1.0 - progress2)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.5 * (1.0 - progress2);
+
+      double radius2 = progress2 * 90;
+      canvas.drawCircle(center, radius2, paint2);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant ShockwavePainter oldDelegate) {
+    return oldDelegate.progress != progress;
+  }
+}
 // ====================================================================
 // 📊 MASTER NAVIGASI UTAMA (PIPA DATA DIALIRKAN DARI SINI)
 // ====================================================================
