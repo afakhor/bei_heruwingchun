@@ -26,63 +26,81 @@ class StockStreamService {
   final StreamController<List<CandleModel>> _chartStreamController = 
       StreamController<List<CandleModel>>.broadcast();
 
+  Timer? _pollingTimer; // 🔥 Mesin penggerak live update (polling)
+
   Stream<List<CandleModel>> get chartStream => _chartStreamController.stream;
 
-  void startStreaming(String ticker, String apiKey, String baseUrl) async {
+  // 🔥 Ditambahkan opsional parameter 'timeframe', default-nya 'month' sesuai Flask
+  void startStreaming(String ticker, String apiKey, String baseUrl, {String timeframe = 'month'}) async {
+    // 🛡️ Bersihkan timer lama jika user mengganti emiten (pindah saham)
+    _pollingTimer?.cancel();
+
     String cleanUrl = baseUrl.trim();
     String targetTicker = ticker.trim().toUpperCase();
 
-    // 🛡️ Proteksi awal jika inputan kosong
     if (targetTicker.isEmpty) targetTicker = 'BBRI';
-    
-    // Potong garis miring '/' di ujung URL jika ada, biar tidak double slash
+
     if (cleanUrl.endsWith('/')) {
       cleanUrl = cleanUrl.substring(0, cleanUrl.length - 1);
     }
 
-    try {
-      // 🔗 Hubungkan ke Server Python Proxy milikmu
-      // Jalur akhir akan menjadi: https://link-python-kamu.com/v1/idx/BBRI/candles
-          final url = Uri.parse('$cleanUrl/$targetTicker/candles');
+    // 📥 FUNGSI INTERNAL UNTUK TEMBAK API
+    Future<void> fetchCandlesCore() async {
+      try {
+        // 🎯 PERBAIKAN URL: Sekarang akurat mengarah ke /api/candles/TICKER?tf=timeframe
+        final url = Uri.parse('$cleanUrl/api/candles/$targetTicker?tf=$timeframe');
 
-    final response = await http.get(url);
+        final response = await http.get(url);
 
-    if (response.statusCode == 200) {
-      // 🔥 UBAH DI SINI: Dekode sebagai Map dulu, lalu ambil isi kotak "candles"
-      final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
-      final List<dynamic> dataHasil = jsonResponse['candles']; // 👈 Pipa data dialihkan ke sini
-      
-      List<CandleModel> loadedCandles = [];
+        if (response.statusCode == 200) {
+          final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
+          final List<dynamic> dataHasil = jsonResponse['candles'];
 
-      for (var item in dataHasil) {
-        DateTime parsedDate = DateTime.parse(item['date']);
-       
-          
-          loadedCandles.add(CandleModel(
-            timestamp: parsedDate,
-            date: parsedDate,
-            open: (item['open'] as num).toDouble(),
-            high: (item['high'] as num).toDouble(),
-            low: (item['low'] as num).toDouble(),
-            close: (item['close'] as num).toDouble(),
-            volume: (item['volume'] as num).toDouble(),
-          ));
+          List<CandleModel> loadedCandles = [];
+
+          for (var item in dataHasil) {
+            DateTime parsedDate = DateTime.parse(item['date']);
+
+            loadedCandles.add(CandleModel(
+              timestamp: parsedDate,
+              date: parsedDate,
+              open: (item['open'] as num).toDouble(),
+              high: (item['high'] as num).toDouble(),
+              low: (item['low'] as num).toDouble(),
+              close: (item['close'] as num).toDouble(),
+              volume: (item['volume'] as num).toDouble(),
+            ));
+          }
+
+          if (!_chartStreamController.isClosed) {
+            _chartStreamController.add(loadedCandles); // Alirkan data baru ke UI
+          }
+        } else {
+          final errorJson = jsonDecode(response.body);
+          _chartStreamController.addError("Server Python: ${errorJson['error'] ?? 'Gagal memuat data'}");
         }
-
-        if (!_chartStreamController.isClosed) {
-          _chartStreamController.add(loadedCandles);
-        }
-      } else {
-        // Jika server Python mengirimkan eror (misal ticker salah)
-        final errorJson = jsonDecode(response.body);
-        _chartStreamController.addError("Server Python: ${errorJson['error'] ?? 'Gagal memuat data'}");
+      } catch (e) {
+        _chartStreamController.addError("Gagal terhubung ke server Python: $e");
       }
-    } catch (e) {
-      _chartStreamController.addError("Gagal terhubung ke server Python: $e");
     }
+
+    // 1. Jalankan tembakan pertama langsung saat fungsi dipanggil
+    await fetchCandlesCore();
+
+    // 2. 🔥 NYALAKAN POMPA DATA: Ambil data otomatis setiap 3 detik (bisa kamu sesuaikan)
+    // Ini taktik paling aman untuk scalping memanfaatkan server PythonAnywhere gratisan
+    _pollingTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
+      await fetchCandlesCore();
+    });
+  }
+
+  // 🔥 Fungsi untuk mematikan pompa data saat user keluar dari mode live trading
+  void stopStreaming() {
+    _pollingTimer?.cancel();
   }
 
   void dispose() {
+    _pollingTimer?.cancel();
     _chartStreamController.close();
   }
 }
