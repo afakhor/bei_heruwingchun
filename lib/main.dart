@@ -217,8 +217,11 @@ class ShockwavePainter extends CustomPainter {
     return oldDelegate.progress != progress;
   }
 }
+
+
+
 // ====================================================================
-// 📊 MASTER NAVIGASI UTAMA (PIPA DATA DIALIRKAN DARI SINI)
+// 📊 MASTER NAVIGASI UTAMA (PIPA DATA DIALIRKAN DI SINI - TANPA API KEY)
 // ====================================================================
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -231,12 +234,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0; 
   String _activeTicker = 'BCIP'; 
 
+  // Controller API Key dibuang, tersisa hanya URL Server
   final TextEditingController _urlInputController = 
       TextEditingController(text: 'https://heruwingchun.pythonanywhere.com/v1/idx'); 
-  final TextEditingController _apiInputController = TextEditingController();
 
   String _urlAktif = "https://heruwingchun.pythonanywhere.com/v1/idx";
-  String _apiKeyAktif = "";
   bool _isEngineRunning = false;
 
   // 🎯 LIFTING STATE: Pipa tunggal ditaruh di level master agar bisa dibagi ke semua halaman
@@ -245,7 +247,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   void dispose() {
     _urlInputController.dispose(); 
-    _apiInputController.dispose();
     _globalStreamService.dispose(); // Amankan pipa bursa dari memory leak
     super.dispose();
   }
@@ -255,7 +256,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       _activeTicker = kodeSahamBaru.toUpperCase(); 
       _currentIndex = 0; 
       if (_isEngineRunning) {
-        _globalStreamService.startStreaming(_activeTicker, _apiKeyAktif, _urlAktif);
+        // API Key diisi string kosong "" agar tidak merusak cetakan fungsi StreamService lamamu
+        _globalStreamService.startStreaming(_activeTicker, "", _urlAktif);
       }
     });
   }
@@ -273,7 +275,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // PANEL 1: KONTROL SERVER
+              // PANEL 1: KONTROL SERVER (BERSIH & MODAL URL SAJA)
               Card(
                 color: const Color(0xff1c2030),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -284,7 +286,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        "CONTROL PANEL SERVER & API KEY",
+                        "CONTROL PANEL SERVER UTAMA",
                         style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xff26a69a)),
                       ),
                       const SizedBox(height: 12),
@@ -302,46 +304,26 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                           enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Colors.grey)),
                         ),
                       ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: _apiInputController,
-                              style: const TextStyle(color: Colors.white, fontSize: 14),
-                              decoration: InputDecoration(
-                                hintText: "Paste API Key (Boleh Kosong)...",
-                                hintStyle: const TextStyle(color: Colors.white24),
-                                prefixIcon: const Icon(Icons.vpn_key, color: Colors.grey, size: 20),
-                                filled: true,
-                                fillColor: const Color(0xff131722),
-                                contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xff26a69a))),
-                                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Colors.grey)),
-                              ),
-                            ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xff26a69a),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                           ),
-                          const SizedBox(width: 10),
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xff26a69a),
-                              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            ),
-                            onPressed: () {
-                              String inputKey = _apiInputController.text.trim();
-                              String inputUrl = _urlInputController.text.trim();
-                              if (inputKey.isEmpty) inputKey = "1";
-                              setState(() {
-                                _apiKeyAktif = inputKey;
-                                _urlAktif = inputUrl; 
-                                _isEngineRunning = true;
-                                _globalStreamService.startStreaming(_activeTicker, _apiKeyAktif, _urlAktif);
-                              });
-                            },
-                            child: const Text("AKTIFKAN", style: TextStyle(fontWeight: FontWeight.bold)),
-                          ),
-                        ],
+                          onPressed: () {
+                            String inputUrl = _urlInputController.text.trim();
+                            setState(() {
+                              _urlAktif = inputUrl; 
+                              _isEngineRunning = true;
+                              // Mengalirkan pipa tanpa API Key (diisi "")
+                              _globalStreamService.startStreaming(_activeTicker, "", _urlAktif);
+                            });
+                          },
+                          child: const Text("AKTIFKAN ENGINES", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                        ),
                       ),
                     ],
                   ),
@@ -352,14 +334,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               // PANEL 2: CHART REALSTREAM & SIGNAL ANALYST
               _isEngineRunning
                   ? LiveTradingView(
-                      apiKey: _apiKeyAktif, 
-                      baseUrl: _urlAktif,
+                      baseUrl: _urlAktif, // Parameter apiKey dibuang dari sini
                       ticker: _activeTicker, 
                       streamService: _globalStreamService,
                       onTickerSearched: (String tickerBaru) {
                         setState(() {
                           _activeTicker = tickerBaru; 
-                          _globalStreamService.startStreaming(_activeTicker, _apiKeyAktif, _urlAktif);
+                          _globalStreamService.startStreaming(_activeTicker, "", _urlAktif);
                         });
                       },
                     ) 
@@ -373,7 +354,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                             Icon(Icons.waves_rounded, color: Colors.amberAccent, size: 50),
                             SizedBox(height: 10),
                             Text(
-                              "Pipa data tersumbat.\nSilakan input URL & API Key di atas lalu klik AKTIFKAN.",
+                              "Pipa data tersumbat.\nSilakan input URL di atas lalu klik AKTIFKAN ENGINES.",
                               textAlign: TextAlign.center,
                               style: TextStyle(color: Colors.amberAccent, fontSize: 14),
                             ),
@@ -400,12 +381,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             streamService: _globalStreamService,
             activeTicker: _activeTicker,
             isEngineRunning: _isEngineRunning,
+            baseUrl: _urlAktif, // 🔥 SUNTIKKAN ALIRAN URL KE HALAMAN 2
           ),  
           MarketRadarScreen(
             onStockSelected: _hubungkanKeDashboard,
             streamService: _globalStreamService,
             activeTicker: _activeTicker,
             isEngineRunning: _isEngineRunning,
+            baseUrl: _urlAktif, // 🔥 SUNTIKKAN ALIRAN URL KE HALAMAN 3
           ), 
           StockCalculatorProScreen(baseUrl: _urlAktif),
         ],
@@ -436,15 +419,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 // 📈 HALAMAN 1: LIVE VIEW & CANDLESTICK (MENGGUNAKAN ENGINE ASLI)
 // ====================================================================
 class LiveTradingView extends StatefulWidget {
-  final String apiKey;
-  final String baseUrl; 
+  final String baseUrl; // Hanya butuh baseUrl
   final String ticker; 
   final StockStreamService streamService;
   final ValueChanged<String> onTickerSearched; 
 
   const LiveTradingView({
     super.key, 
-    required this.apiKey, 
     required this.baseUrl, 
     required this.ticker,
     required this.streamService,
@@ -601,6 +582,8 @@ class _LiveTradingViewState extends State<LiveTradingView> {
   }
 }
 
+
+
 // ====================================================================
 // 📊 HALAMAN 2: STOCK SCREENER DENGAN FILTER (TERKONEKSI ISOLATE C++)
 // ====================================================================
@@ -641,6 +624,7 @@ class StockScreenerScreen extends StatefulWidget {
   final StockStreamService streamService;
   final String activeTicker;
   final bool isEngineRunning;
+  final String baseUrl; // 🔥 MENERIMA PIPA URL DARI MASTER NAVIGASI
 
   const StockScreenerScreen({
     super.key,
@@ -648,6 +632,7 @@ class StockScreenerScreen extends StatefulWidget {
     required this.streamService,
     required this.activeTicker,
     required this.isEngineRunning,
+    required this.baseUrl, // Wajib diisi dari router utama
   });
 
   @override
@@ -679,20 +664,34 @@ class _StockScreenerScreenState extends State<StockScreenerScreen> {
     });
   }
 
+  // 🚀 PIPELINE AMBIL DATA SCREENER REAL-TIME DARI BACKEND (TANPA API KEY / DUMMY)
   Future<void> _fetchScreenerData() async {
     try {
-      // Di sini nanti tempat http.get kamu ke PythonAnywhere
-      await Future.delayed(const Duration(milliseconds: 600)); 
+      String cleanUrl = widget.baseUrl.trim();
+      if (cleanUrl.endsWith('/')) {
+        cleanUrl = cleanUrl.substring(0, cleanUrl.length - 1);
+      }
 
-      final List<Map<String, dynamic>> dummyJsonResponse = [
-        {'ticker': 'BCIP', 'close': 58.0, 'change_percent': -1.69, 'signal': '🔥 VOL SPIKE', 'ema5': 56.0, 'ema20': 54.0, 'ema200': 50.0, 'rsi': 55.0, 'vwap': 57.0, 'adx': 25.0, 'atr': 2.0},
-        {'ticker': 'GOTO', 'close': 54.0, 'change_percent': 9.5, 'signal': '🚀 BREAKOUT', 'ema5': 50.0, 'ema20': 48.0, 'ema200': 60.0, 'rsi': 65.0, 'vwap': 52.0, 'adx': 35.0, 'atr': 3.0},
-        {'ticker': 'BBCA', 'close': 10100.0, 'change_percent': 1.2, 'signal': '👑 LEADER', 'ema5': 10000.0, 'ema20': 9800.0, 'ema200': 9500.0, 'rsi': 50.0, 'vwap': 10050.0, 'adx': 20.0, 'atr': 150.0},
-      ];
+      // Tembak endpoint screener raw data tanpa gembok header API Key
+      final response = await http.get(
+        Uri.parse('$cleanUrl/api/screener-raw'),
+      ).timeout(const Duration(seconds: 10));
 
-      // Kirim data mentah ke pipa pemrosesan C++ Isolate
-      memprosesDataScreener(dummyJsonResponse);
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> jsonResponse = json.decode(response.body);
+        final List<dynamic> rawStocks = jsonResponse['stocks_data'] ?? [];
+        
+        // Amankan tipe data ke format List<Map<String, dynamic>> sebelum dilempar ke Isolate
+        List<Map<String, dynamic>> dataDariPython = List<Map<String, dynamic>>.from(rawStocks);
+
+        // Kirim data mentah hasil sedotan online ke pipa pemrosesan C++ Isolate
+        memprosesDataScreener(dataDariPython);
+      } else {
+        print("Screener Server Error: ${response.statusCode}");
+        setState(() => _isLoading = false);
+      }
     } catch (e) {
+      print("Error Fetching Screener Data: $e");
       setState(() => _isLoading = false);
     }
   }
@@ -764,6 +763,20 @@ class _StockScreenerScreenState extends State<StockScreenerScreen> {
                 style: TextStyle(color: isLive ? Colors.greenAccent : Colors.grey, fontSize: 8, fontWeight: FontWeight.bold),
               ),
             ),
+            const Spacer(),
+            if (stock.signal.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.redAccent.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: Colors.redAccent.withOpacity(0.3))
+                ),
+                child: Text(
+                  stock.signal,
+                  style: const TextStyle(color: Colors.redAccent, fontSize: 9, fontWeight: FontWeight.bold),
+                ),
+              ),
           ],
         ),
         subtitle: Text(
@@ -783,6 +796,8 @@ class _StockScreenerScreenState extends State<StockScreenerScreen> {
   }
 }
 
+
+
 // ====================================================================
 // 📊 HALAMAN 3: IDX MARKET RADAR
 // ====================================================================
@@ -800,11 +815,12 @@ class RadarStockModel {
   });
 }
 
-class MarketRadarScreen extends StatelessWidget {
+class MarketRadarScreen extends StatefulWidget {
   final Function(String) onStockSelected;
   final StockStreamService streamService;
   final String activeTicker;
   final bool isEngineRunning;
+  final String baseUrl; // 🔥 Hanya menerima baseUrl saja tanpa apiKey
 
   const MarketRadarScreen({
     super.key, 
@@ -812,26 +828,102 @@ class MarketRadarScreen extends StatelessWidget {
     required this.streamService,
     required this.activeTicker,
     required this.isEngineRunning,
+    required this.baseUrl,
   });
 
-  List<RadarStockModel> get _gainers => [
-    RadarStockModel(ticker: 'BCIP', basePrice: 84, baseChange: 14.2, alertColor: Colors.greenAccent),
-    RadarStockModel(ticker: 'GOTO', basePrice: 54, baseChange: 9.5, alertColor: Colors.greenAccent),
-    RadarStockModel(ticker: 'BUMI', basePrice: 120, baseChange: 7.2, alertColor: Colors.greenAccent),
-  ];
+  @override
+  State<MarketRadarScreen> createState() => _MarketRadarScreenState();
+}
 
-  List<RadarStockModel> get _losers => [
-    RadarStockModel(ticker: 'ASII', basePrice: 4600, baseChange: -6.8, alertColor: Colors.redAccent),
-    RadarStockModel(ticker: 'UNVR', basePrice: 2300, baseChange: -5.2, alertColor: Colors.redAccent),
-  ];
+class _MarketRadarScreenState extends State<MarketRadarScreen> {
+  List<RadarStockModel> _gainers = [];
+  List<RadarStockModel> _losers = [];
+  List<RadarStockModel> _marketCaps = [];
+  bool _isLoading = true;
 
-  List<RadarStockModel> get _marketCaps => [
-    RadarStockModel(ticker: 'BBCA', basePrice: 10100, baseChange: 1.2, alertColor: Colors.amber),
-    RadarStockModel(ticker: 'BBRI', basePrice: 4400, baseChange: -0.8, alertColor: Colors.amber),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _fetchRadarData(); // Jalankan pipa penyedot data saat halaman dibuka
+  }
+
+  // 🚀 PIPELINE AMBIL DATA RADAR PASAR REALTIME (PLONG TANPA API KEY)
+  Future<void> _fetchRadarData() async {
+    try {
+      String cleanUrl = widget.baseUrl.trim();
+      if (cleanUrl.endsWith('/')) {
+        cleanUrl = cleanUrl.substring(0, cleanUrl.length - 1);
+      }
+
+      final url = Uri.parse('$cleanUrl/api/market-radar');
+      
+      // Tembak langsung tanpa gembok header API Key
+      final response = await http.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
+
+        // 1. Parsing Data Gainers
+        final List<dynamic> rawGainers = jsonResponse['gainers'] ?? [];
+        final List<RadarStockModel> loadedGainers = rawGainers.map((item) {
+          return RadarStockModel(
+            ticker: item['ticker'],
+            basePrice: (item['price'] as num).toDouble(),
+            baseChange: (item['change_percent'] as num).toDouble(),
+            alertColor: Colors.greenAccent,
+          );
+        }).toList();
+
+        // 2. Parsing Data Losers
+        final List<dynamic> rawLosers = jsonResponse['losers'] ?? [];
+        final List<RadarStockModel> loadedLosers = rawLosers.map((item) {
+          return RadarStockModel(
+            ticker: item['ticker'],
+            basePrice: (item['price'] as num).toDouble(),
+            baseChange: (item['change_percent'] as num).toDouble(),
+            alertColor: Colors.redAccent,
+          );
+        }).toList();
+
+        // 3. Parsing Data Market Caps
+        final List<dynamic> rawCaps = jsonResponse['market_caps'] ?? [];
+        final List<RadarStockModel> loadedCaps = rawCaps.map((item) {
+          return RadarStockModel(
+            ticker: item['ticker'],
+            basePrice: (item['price'] as num).toDouble(),
+            baseChange: (item['change_percent'] as num).toDouble(),
+            alertColor: Colors.amber,
+          );
+        }).toList();
+
+        setState(() {
+          _gainers = loadedGainers;
+          _losers = loadedLosers;
+          _marketCaps = loadedCaps;
+          _isLoading = false;
+        });
+      } else {
+        throw Exception("Gagal memuat radar");
+      }
+    } catch (e) {
+      print("Error Radar: $e");
+      setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator(color: Color(0xff26a69a))),
+      );
+    }
+
     return DefaultTabController(
       length: 3,
       child: Scaffold(
@@ -849,7 +941,7 @@ class MarketRadarScreen extends StatelessWidget {
           ),
         ),
         body: StreamBuilder<List<CandleModel>>(
-          stream: isEngineRunning ? streamService.chartStream : null,
+          stream: widget.isEngineRunning ? widget.streamService.chartStream : null,
           builder: (context, snapshot) {
             double livePrice = 0;
             double liveChange = 0;
@@ -878,6 +970,7 @@ class MarketRadarScreen extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       children: [
         _buildSectionHeader(title1),
+        if (section1.isEmpty) const Padding(padding: EdgeInsets.all(8), child: Text("Data kosong", style: TextStyle(color: Colors.grey, fontSize: 11))),
         ...section1.map((stock) => _buildStockDynamicRow(stock, livePrice, liveChange)),
         if (section2.isNotEmpty) ...[
           const SizedBox(height: 15),
@@ -900,7 +993,7 @@ class MarketRadarScreen extends StatelessWidget {
     double finalChange = stock.baseChange;
     bool isRealtime = false;
 
-    if (isEngineRunning && stock.ticker == activeTicker && livePrice > 0) {
+    if (widget.isEngineRunning && stock.ticker == widget.activeTicker && livePrice > 0) {
       finalPrice = livePrice;
       finalChange = liveChange;
       isRealtime = true;
@@ -919,7 +1012,7 @@ class MarketRadarScreen extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: ListTile(
         dense: true,
-        onTap: () => onStockSelected(stock.ticker),
+        onTap: () => widget.onStockSelected(stock.ticker),
         title: Row(
           children: [
             Text(stock.ticker, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
@@ -949,6 +1042,9 @@ class MarketRadarScreen extends StatelessWidget {
     );
   }
 }
+
+
+
 
 // ====================================================================
 // 🧮 HALAMAN 4: KALKULATOR SAHAM PRO (HYBRID HYPER HYDRATED ENGINE)
@@ -1002,7 +1098,7 @@ class _StockCalculatorProScreenState extends State<StockCalculatorProScreen> {
     super.dispose();
   }
 
-  // 🚀 FUNGSI KILAT PENGAMBIL DATA 1 SAHAM (HYBRID AUTO-COMPLETE)
+  // 🚀 FUNGSI PULL ONLINE TANPA API KEY (SUDAH DIUPDATE)
   Future<void> _fetchSingleStockPrice() async {
     String ticker = _tickerSearchCtrl.text.trim().toUpperCase();
     if (ticker.isEmpty) {
@@ -1016,9 +1112,14 @@ class _StockCalculatorProScreenState extends State<StockCalculatorProScreen> {
     });
 
     try {
-      // Menembak endpoint kilat 1 saham dengan batas sabar (timeout) hanya 5 detik
+      String cleanUrl = widget.baseUrl.trim();
+      if (cleanUrl.endsWith('/')) {
+        cleanUrl = cleanUrl.substring(0, cleanUrl.length - 1);
+      }
+
+      // 🎯 Tembak langsung ke server tanpa gembok headers
       final response = await http.get(
-        Uri.parse('${widget.baseUrl}/api/price?ticker=$ticker'),
+        Uri.parse('$cleanUrl/api/price?ticker=$ticker'),
       ).timeout(const Duration(seconds: 5));
 
       if (response.statusCode == 200) {
@@ -1027,14 +1128,15 @@ class _StockCalculatorProScreenState extends State<StockCalculatorProScreen> {
 
         if (price > 0) {
           setState(() {
-            // 🔥 KUNCI UTAMA: Auto-Complete menyuntik semua kolom harga di seluruh Tab!
+            // 🔥 Auto-Complete menyuntik semua kolom harga di seluruh Tab!
             _pnlBuyPriceCtrl.text = price.toStringAsFixed(0);
             _avgPrice2Ctrl.text = price.toStringAsFixed(0);
             _planBuyPriceCtrl.text = price.toStringAsFixed(0);
             _cashStockPriceCtrl.text = price.toStringAsFixed(0);
-            _searchStatus = "🟢 Ticker $ticker Berhasil Masuk: Rp${price.toStringAsFixed(0)} (Semua Kolom Terisi!)";
+            _searchStatus = "🟢 Ticker $ticker Berhasil Masuk: Rp${price.toStringAsFixed(0)}";
           });
-          // Picu ulang kalkulasi otomatis jika ada sisa muatan lot lama yang tertinggal
+          
+          // Picu ulang kalkulasi otomatis setelah auto-fill data baru
           _prosesHitungPnL();
           _prosesHitungAvg();
           _prosesHitungPlan();
@@ -1203,7 +1305,7 @@ class _StockCalculatorProScreenState extends State<StockCalculatorProScreen> {
               ),
             ),
 
-            // 🔥 PANEL NEW GADGET: INTERFACE SCANNER PULL ONLINE HYBRID
+            // 🔥 PANEL INTERFACE SCANNER PULL ONLINE HYBRID
             Container(
               color: const Color(0xff1c2030),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -1356,7 +1458,7 @@ class _StockCalculatorProScreenState extends State<StockCalculatorProScreen> {
           ),
           const SizedBox(height: 15),
           _buildResultCard(_planResult),
-        ],
+         ],
       ),
     );
   }
