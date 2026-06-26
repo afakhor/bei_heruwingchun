@@ -229,31 +229,42 @@ def get_market_radar():
     except Exception as e:
         return jsonify({"error": f"Gagal mengambil data live radar bursa: {str(e)}"}), 500
 
-# 🎯 ENDPOINT REVISI HALAMAN 4 (PLONG & REAL-TIME)
+# 🎯 ENDPOINT UNTUK AUTO-COMPLETE HARGA DI HALAMAN 4 (KALKULATOR PRO)
 @app.route('/api/price', methods=['GET'])
-def get_single_stock_price():
-    # 🔍 Langsung tangkap kode saham (ticker) tanpa cek API Key
-    ticker = request.args.get('ticker', '').upper()
+def get_single_price():
+    # Tangkap kode saham dari ujung URL (contoh: ?ticker=BCIP)
+    ticker = request.args.get('ticker')
+    
     if not ticker:
-        return jsonify({"error": "Ticker tidak boleh kosong!"}), 400
+        return jsonify({"error": "Kode saham (ticker) wajib diisi!"}), 400
+
+    ticker = ticker.upper().strip()
 
     try:
-        # 🔥 PIPA REAL-TIME: Langsung panggil fungsi scraper atau query DB asli milikmu
-        # Pastikan nama fungsi 'ambil_harga_terupdate_idx' sesuai dengan fungsi Halaman 1-mu
-        harga_final = ambil_harga_terupdate_idx(ticker)
+        # 🔥 PIPA REAL-TIME: Panggil fungsi scraper aslimu untuk mengambil 1 harga saham
+        # Contoh: harga_terkini = scraper_harga_satuan(ticker)
+        
+        # --- DUMMY SEMENTARA (Hapus dan ganti dengan variabel hasil scraping aslimu) ---
+        harga_terkini = 0
+        if ticker == "BCIP":
+            harga_terkini = 84
+        elif ticker == "GOTO":
+            harga_terkini = 54
+        elif ticker == "BBRI":
+            harga_terkini = 4400
+        # -------------------------------------------------------------------------------
 
-        # Validasi jika data gagal ditarik atau emiten tidak ditemukan
-        if not harga_final or harga_final == 0:
-            return jsonify({"error": f"Saham {ticker} tidak ditemukan atau gagal di-scrape"}), 404
-
-        return jsonify({
-            "ticker": ticker,
-            "price": float(harga_final) # Return angka real-time langsung ke Flutter
-        })
+        if harga_terkini > 0:
+            # Format kembalian json ini wajib sesuai dengan yang dicari Flutter-mu: data['price']
+            return jsonify({
+                "ticker": ticker,
+                "price": harga_terkini
+            })
+        else:
+            return jsonify({"error": f"Saham {ticker} tidak ditemukan atau harga 0"}), 404
 
     except Exception as e:
-        return jsonify({"error": f"Gagal mengambil data live dari bursa: {str(e)}"}), 500
-
+        return jsonify({"error": f"Gagal mengambil harga: {str(e)}"}), 500
 
  ####🔎🔎🔎🔎app.route server nyala apa tidak heruwingchun/pythonanywhere.com
 @app.route('/')
