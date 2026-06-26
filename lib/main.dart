@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert'; // Wajib untuk memproses data JSON dari server
+import 'package:http/http.dart' as http; // Pipa koneksi internet kilat
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart'; // Wajib untuk fungsi compute
 import 'stock_stream_service.dart';
@@ -31,7 +33,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       TextEditingController(text: 'https://heruwingchun.pythonanywhere.com/v1/idx'); 
   final TextEditingController _apiInputController = TextEditingController();
 
-  String _urlAktif = "";
+  String _urlAktif = "https://heruwingchun.pythonanywhere.com/v1/idx";
   String _apiKeyAktif = "";
   bool _isEngineRunning = false;
 
@@ -203,7 +205,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             activeTicker: _activeTicker,
             isEngineRunning: _isEngineRunning,
           ), 
-          const StockCalculatorProScreen(),
+          StockCalculatorProScreen(baseUrl: _urlAktif),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -479,7 +481,7 @@ class _StockScreenerScreenState extends State<StockScreenerScreen> {
     try {
       // Di sini nanti tempat http.get kamu ke PythonAnywhere
       await Future.delayed(const Duration(milliseconds: 600)); 
-      
+
       final List<Map<String, dynamic>> dummyJsonResponse = [
         {'ticker': 'BCIP', 'close': 58.0, 'change_percent': -1.69, 'signal': '🔥 VOL SPIKE', 'ema5': 56.0, 'ema20': 54.0, 'ema200': 50.0, 'rsi': 55.0, 'vwap': 57.0, 'adx': 25.0, 'atr': 2.0},
         {'ticker': 'GOTO', 'close': 54.0, 'change_percent': 9.5, 'signal': '🚀 BREAKOUT', 'ema5': 50.0, 'ema20': 48.0, 'ema200': 60.0, 'rsi': 65.0, 'vwap': 52.0, 'adx': 35.0, 'atr': 3.0},
@@ -747,16 +749,23 @@ class MarketRadarScreen extends StatelessWidget {
 }
 
 // ====================================================================
-// 🧮 HALAMAN 4: KALKULATOR SAHAM PRO
+// 🧮 HALAMAN 4: KALKULATOR SAHAM PRO (HYBRID HYPER HYDRATED ENGINE)
 // ====================================================================
 class StockCalculatorProScreen extends StatefulWidget {
-  const StockCalculatorProScreen({super.key});
+  final String baseUrl; // Menerima pipa URL dari Master Navigasi
+
+  const StockCalculatorProScreen({super.key, required this.baseUrl});
 
   @override
   State<StockCalculatorProScreen> createState() => _StockCalculatorProScreenState();
 }
 
 class _StockCalculatorProScreenState extends State<StockCalculatorProScreen> {
+  // Kontrol Ticker & Status Pipa Pendek Online
+  final _tickerSearchCtrl = TextEditingController();
+  bool _isFetchingPrice = false;
+  String _searchStatus = "Mode: Offline (Bisa ketik manual). Masukkan Ticker untuk Auto-Fill Online.";
+
   final _feeBuyGlobalCtrl = TextEditingController(text: "0.15");
   final _feeSellGlobalCtrl = TextEditingController(text: "0.25");
 
@@ -782,12 +791,65 @@ class _StockCalculatorProScreenState extends State<StockCalculatorProScreen> {
 
   @override
   void dispose() {
+    _tickerSearchCtrl.dispose();
     _feeBuyGlobalCtrl.dispose(); _feeSellGlobalCtrl.dispose();
     _pnlBuyPriceCtrl.dispose(); _pnlSellPriceCtrl.dispose(); _pnlLotCtrl.dispose();
     _avgPrice1Ctrl.dispose(); _avgLot1Ctrl.dispose(); _avgPrice2Ctrl.dispose(); _avgLot2Ctrl.dispose();
     _planBuyPriceCtrl.dispose(); _planTargetProfitCtrl.dispose(); _planCutLossCtrl.dispose();
     _cashAvailableCtrl.dispose(); _cashStockPriceCtrl.dispose();
     super.dispose();
+  }
+
+  // 🚀 FUNGSI KILAT PENGAMBIL DATA 1 SAHAM (HYBRID AUTO-COMPLETE)
+  Future<void> _fetchSingleStockPrice() async {
+    String ticker = _tickerSearchCtrl.text.trim().toUpperCase();
+    if (ticker.isEmpty) {
+      setState(() => _searchStatus = "⚠️ Harap isi kode saham terlebih dahulu.");
+      return;
+    }
+
+    setState(() {
+      _isFetchingPrice = true;
+      _searchStatus = "⚡ Sedang menarik data harga $ticker dari server...";
+    });
+
+    try {
+      // Menembak endpoint kilat 1 saham dengan batas sabar (timeout) hanya 5 detik
+      final response = await http.get(
+        Uri.parse('${widget.baseUrl}/api/price?ticker=$ticker'),
+      ).timeout(const Duration(seconds: 5));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        double price = (data['price'] ?? data['close'] ?? 0.0).toDouble();
+
+        if (price > 0) {
+          setState(() {
+            // 🔥 KUNCI UTAMA: Auto-Complete menyuntik semua kolom harga di seluruh Tab!
+            _pnlBuyPriceCtrl.text = price.toStringAsFixed(0);
+            _avgPrice2Ctrl.text = price.toStringAsFixed(0);
+            _planBuyPriceCtrl.text = price.toStringAsFixed(0);
+            _cashStockPriceCtrl.text = price.toStringAsFixed(0);
+            _searchStatus = "🟢 Ticker $ticker Berhasil Masuk: Rp${price.toStringAsFixed(0)} (Semua Kolom Terisi!)";
+          });
+          // Picu ulang kalkulasi otomatis jika ada sisa muatan lot lama yang tertinggal
+          _prosesHitungPnL();
+          _prosesHitungAvg();
+          _prosesHitungPlan();
+          _prosesHitungDayaBeli();
+        } else {
+          setState(() => _searchStatus = "⚠️ Saham $ticker tidak ditemukan di bursa.");
+        }
+      } else {
+        setState(() => _searchStatus = "❌ Server Python merespon eror (${response.statusCode}).");
+      }
+    } on TimeoutException catch (_) {
+      setState(() => _searchStatus = "📴 Koneksi Server Timeout. Otomatis beralih ke Mode Offline.");
+    } catch (e) {
+      setState(() => _searchStatus = "📴 Gagal tersambung internet. Silakan ketik harga secara manual.");
+    } finally {
+      setState(() => _isFetchingPrice = false);
+    }
   }
 
   void _prosesHitungPnL() {
@@ -902,6 +964,7 @@ class _StockCalculatorProScreenState extends State<StockCalculatorProScreen> {
         ),
         body: Column(
           children: [
+            // PANEL 1: CONFIG BROKER FEE
             Container(
               color: const Color(0xff1f222e),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -937,6 +1000,67 @@ class _StockCalculatorProScreenState extends State<StockCalculatorProScreen> {
                 ],
               ),
             ),
+
+            // 🔥 PANEL NEW GADGET: INTERFACE SCANNER PULL ONLINE HYBRID
+            Container(
+              color: const Color(0xff1c2030),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: SizedBox(
+                          height: 40,
+                          child: TextField(
+                            controller: _tickerSearchCtrl,
+                            textCapitalization: TextCapitalization.characters,
+                            style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                            decoration: InputDecoration(
+                              hintText: "Ketik Kode Saham Target (Contoh: BCIP)...",
+                              hintStyle: const TextStyle(color: Colors.white24, fontSize: 12),
+                              prefixIcon: const Icon(Icons.search, color: Colors.grey, size: 18),
+                              filled: true,
+                              fillColor: const Color(0xff131722),
+                              contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 10),
+                              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xff26a69a))),
+                              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Colors.grey)),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      SizedBox(
+                        height: 40,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xff26a69a),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                          ),
+                          onPressed: _isFetchingPrice ? null : _fetchSingleStockPrice,
+                          child: _isFetchingPrice 
+                              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                              : const Text("PULL ONLINE", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.white)),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _searchStatus,
+                    style: TextStyle(
+                      fontSize: 11, 
+                      fontWeight: FontWeight.w500,
+                      color: _searchStatus.contains("🟢") ? Colors.greenAccent : (_searchStatus.contains("❌") || _searchStatus.contains("⚠️") ? Colors.redAccent : Colors.grey)
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // TAMPILAN TAB-VIEW UTAMA
             Expanded(
               child: TabBarView(
                 children: [
