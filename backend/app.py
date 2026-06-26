@@ -1,21 +1,23 @@
 import flask
-from flask import jsonify
+# 🔥 PERBAIKAN: Menambahkan Flask dan request ke dalam import
+from flask import Flask, jsonify, request 
 import yfinance as yf
 import pandas as pd
 import numpy as np
 
-app = flask.Flask(__name__)
+# 🔥 PERBAIKAN: Menggunakan Flask yang sudah di-import langsung
+app = Flask(__name__)
 
 def calculate_indicators(df):
     """Menghitung semua indikator teknikal menggunakan pure pandas/numpy"""
     if len(df) < 200:  # Pastikan data cukup untuk EMA 200
         return None
-        
+
     # 1. EMA 5, 20, 200
     df['ema5'] = df['Close'].ewm(span=5, adjust=False).mean()
     df['ema20'] = df['Close'].ewm(span=20, adjust=False).mean()
     df['ema200'] = df['Close'].ewm(span=200, adjust=False).mean()
-    
+
     # 2. RSI 14 (Wilder's Smoothing)
     delta = df['Close'].diff()
     gain = delta.clip(lower=0)
@@ -24,35 +26,35 @@ def calculate_indicators(df):
     avg_loss = loss.ewm(com=13, adjust=False).mean()
     rs = avg_gain / (avg_loss + 1e-10) # hindari pembagian dengan nol
     df['rsi'] = 100 - (100 / (1 + rs))
-    
+
     # 3. VWAP (Pendekatan Rolling VWAP untuk data harian)
     typical_price = (df['High'] + df['Low'] + df['Close']) / 3
     df['vwap'] = (typical_price * df['Volume']).rolling(window=14).sum() / (df['Volume'].rolling(window=14).sum() + 1e-10)
-    
+
     # 4. ATR 14
     high_low = df['High'] - df['Low']
     high_cp = (df['High'] - df['Close'].shift()).abs()
     low_cp = (df['Low'] - df['Close'].shift()).abs()
     tr = pd.concat([high_low, high_cp, low_cp], axis=1).max(axis=1)
     df['atr'] = tr.ewm(com=13, adjust=False).mean()
-    
+
     # 5. ADX 14
     plus_dm = df['High'].diff()
     minus_dm = df['Low'].diff()
-    
+
     plus_dm = np.where((plus_dm > minus_dm) & (plus_dm > 0), plus_dm, 0.0)
     minus_dm = np.where((minus_dm > plus_dm) & (minus_dm > 0), minus_dm, 0.0)
-    
+
     plus_di = 100 * (pd.Series(plus_dm, index=df.index).ewm(com=13, adjust=False).mean() / (df['atr'] + 1e-10))
     minus_di = 100 * (pd.Series(minus_dm, index=df.index).ewm(com=13, adjust=False).mean() / (df['atr'] + 1e-10))
-    
+
     dx = 100 * (plus_di - minus_di).abs() / ((plus_di + minus_di) + 1e-10)
     df['adx'] = dx.ewm(com=13, adjust=False).mean()
-    
+
     return df
 
-@app.route("/v1/idx/market/screener", methods=["GET"])
-def get_market_screener():
+@app.route('/api/screener', methods=['GET'])
+def get_screener():
     try:
         active_tickers = [
             "AALI.JK", "ABBA.JK", "ABDA.JK", 
@@ -298,32 +300,26 @@ def get_market_screener():
         ]
         
         screener_list = []
-        chunk_size = 150  # Tarik data 150 saham sekaligus secara paralel via yfinance
-        
+        chunk_size = 150 
+
         for i in range(0, len(active_tickers), chunk_size):
             chunk = active_tickers[i:i + chunk_size]
-            
-            # Ambil data harian selama 1 tahun untuk menghitung EMA 200 secara akurat
             df_bulk = yf.download(chunk, period="1y", interval="1d", group_by="ticker", progress=False)
-            
+
             for ticker in chunk:
                 try:
-                    # Ambil sub-dataframe untuk satu ticker tertentu
                     if ticker in df_bulk.columns.levels[0]:
                         df = df_bulk[ticker].dropna(subset=['Close'])
                         if df.empty or len(df) < 200:
                             continue
-                        
-                        # Hitung semua indikator
+
                         df_computed = calculate_indicators(df)
                         if df_computed is None:
                             continue
-                            
-                        # Ambil baris terakhir (data hari ini / terupdate)
+
                         last_row = df_computed.iloc[-1]
-                        
                         ticker_clean = ticker.replace('.JK', '')
-                        
+
                         screener_list.append({
                           "ticker": ticker_clean,
                           "close": float(last_row['Close']),
@@ -336,9 +332,57 @@ def get_market_screener():
                           "atr": float(last_row['atr'])
                         })
                 except Exception:
-                    continue # Lewati jika ada emiten bermasalah / delisting
-                    
+                    continue
+
         return jsonify(screener_list)
-        
+
     except Exception as e:
         return jsonify({"error": f"Gagal memuat radar pasar: {str(e)}"}), 500
+
+
+# ====================================================================
+# 2. ENDPOINT CANDLESTICK (Sudah Sinkron dengan Request Flutter)
+# ====================================================================
+@app.route('/api/candles/<ticker>', methods=['GET'])
+def get_ticker_candles(ticker):
+    try:
+        # Ambil parameter 'tf' dari Flutter, jika kosong default ke 'month'
+        tf = request.args.get('tf', 'month').lower()
+        
+        # 🎯 Pemetaan 4 Opsi Timeframe sesuai spek yfinance
+        if tf == 'intraday':
+            period, interval = "1d", "5m"   # 1 Hari penuh, candle per 5 menit
+        elif tf == 'week':
+            period, interval = "5d", "15m"  # 1 Minggu ke belakang, candle per 15 menit
+        elif tf == 'month':
+            period, interval = "1mo", "1d"  # 1 Bulan ke belakang, candle harian
+        elif tf == 'ytd':
+            period, interval = "ytd", "1d"  # Dari awal tahun sampai hari ini, candle harian
+        else:
+            period, interval = "1mo", "1d"
+
+        ticker_jk = f"{ticker.upper()}.JK"
+        df = yf.download(ticker_jk, period=period, interval=interval, progress=False)
+        
+        if df.empty:
+            return jsonify({"error": "Data tidak ditemukan"}), 404
+            
+        candles = []
+        for index, row in df.iterrows():
+            candles.append({
+                # Jika intraday/week pakai format lengkap jam, jika daily cukup tanggalnya
+                "date": index.strftime('%Y-%m-%d %H:%M:%S'),
+                "open": float(row['Open']),
+                "high": float(row['High']),
+                "low": float(row['Low']),
+                "close": float(row['Close']),
+                "volume": float(row['Volume'])
+            })
+            
+        return jsonify({"candles": candles})
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+if __name__ == '__main__':
+    app.run(debug=True)
