@@ -52,12 +52,15 @@ extern "C" {
         // PARAMETER 4: RUMUS ADAPTIF SCALPING (RSI 14)
         // =================================================================
         if (rsi >= 30 && rsi <= 45) {
-            result.score += 20; // Golden area untuk akumulasi scalping
-        } else if (rsi > 45 && rsi <= 65) {
-            result.score += 10; // Mengikuti momentum naik
-        } else if (rsi > 70) {
-            result.score -= 15; // Mencegah HAKA di pucuk jenuh beli
-        }
+    result.score += 20; // Golden area akumulasi
+} else if (rsi > 45 && rsi <= 65) {
+    result.score += 10; // Momentum aman
+} else if (rsi > 65 && rsi <= 70) {
+    result.score += 5;  // ⚠️ Perbaikan: Zona ngerem, kenaikan mulai terbatas
+} else if (rsi > 70) {
+    result.score -= 15; // Sudah overbought, kurangi skor
+}
+
 
         // =================================================================
         // PARAMETER 5: MESIN ACCELERATOR (ADX)
